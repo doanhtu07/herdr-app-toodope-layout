@@ -1,0 +1,22 @@
+{
+  "name": "herdr-app-toodope-layout",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TooDope layout and mods for Herdr App",
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10"
+  }
+}
