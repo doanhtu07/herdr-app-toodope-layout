@@ -16,6 +16,7 @@ MODS = (
     "toodope-spaces",
     "toodope-tabs-active-dot",
     "toodope-workspace-status",
+    "toodope-pane-header",
 )
 
 
@@ -110,7 +111,7 @@ def main() -> int:
         print(f"TooDope install failed: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Installed TooDope layout and 3 mods into {config}")
+    print(f"Installed TooDope layout and {len(MODS)} mods into {config}")
     print("Select it in Herdr with: herdr-app do layout.switch --name TooDope")
 
     return 0

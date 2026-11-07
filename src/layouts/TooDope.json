@@ -98,7 +98,7 @@
                 "pane": {
                   "header": {
                     "content": {
-                      "mod": "pane"
+                      "mod": "toodope-pane-header"
                     },
                     "reveal": "always",
                     "height": 30,

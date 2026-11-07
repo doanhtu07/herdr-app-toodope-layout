@@ -36,7 +36,7 @@ To choose a config folder explicitly:
 python3 scripts/install.py --config "/path/to/herdr-app"
 ```
 
-It replaces only `layouts/TooDope.json` and the three `mods/toodope-*`
+It replaces only `layouts/TooDope.json` and the package's `mods/toodope-*`
 folders owned by this package. It does not touch other layouts, mods, settings,
 keys, or Herdr-managed layout click state. After installation, select it with:
 
