@@ -49,6 +49,21 @@ const rowHeight = ({ tree }) => (tree ? 40 : 44)
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)])
 const base = (path) => path.replace(/\/+$/, '').split('/').pop()
 
+const isWindowsPath = (path) => /^[a-z]:[\\/]/i.test(path) || /^\\\\/.test(path)
+const powershellQuote = (value) => `'${String(value).replace(/'/g, "''")}'`
+
+async function launchCode(args, options) {
+  if (!isWindowsPath(home())) return exec('code', args, options)
+
+  const command = `& 'code' ${args.map(powershellQuote).join(' ')}; if ($null -ne $LASTEXITCODE) { exit $LASTEXITCODE }`
+
+  return exec(
+    'powershell.exe',
+    ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', command],
+    options,
+  )
+}
+
 const isHome = (path) =>
   path?.replace(/\/+$/, '') === home().replace(/\/+$/, '')
 
@@ -544,10 +559,33 @@ export default class Spaces extends View {
     if (!cwd || w.name === '~' || isHome(cwd)) return
     cx.spawn(async () => {
       try {
-        const result = await exec('code', ['--new-window', cwd], {
-          cwd,
-          on: w.machine,
-        })
+        let args = ['--new-window']
+        let options = { cwd }
+
+        if (w.machine) {
+          const r = await hc(['machine', 'ls', '--json'])
+          if (r.code !== 0)
+            throw new Error(r.stderr || r.stdout || 'Could not list machines.')
+
+          const machine = (JSON.parse(r.stdout).machines ?? []).find(
+            (m) => m.name === w.machine,
+          )
+          if (!machine?.target)
+            throw new Error(
+              `No SSH target is configured for machine ${w.machine}.`,
+            )
+          if (machine.via)
+            throw new Error(
+              'This machine uses a Herdr via connection; configure an equivalent SSH host for VS Code Remote-SSH.',
+            )
+
+          args.push('--remote', `ssh-remote+${machine.target}`, cwd)
+          options = { cwd: home() }
+        } else {
+          args.push(cwd)
+        }
+
+        const result = await launchCode(args, options)
         if (result.code !== 0) {
           notify({
             title: "Couldn't open project in VS Code",
