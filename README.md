@@ -2,6 +2,8 @@
 
 TooDope layout for Herdr App.
 
+![TooDope](preview.png)
+
 ## Development
 
 Install the repository's development tools and Git hooks with:
