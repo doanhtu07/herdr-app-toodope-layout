@@ -62,9 +62,9 @@ herdr-app do layout.switch --name TooDope
 ```
 
 The gallery-ready layout package is in `TooDope/` (`layouts/`, `mods/`,
-`RECIPE.md`, and `preview.png`). `preview.png` is included with the space list,
-tab labels, and terminal contents blurred. The installer has no third-party Python
-dependencies and makes no network requests. The `toodope-spaces` mod runs
+`RECIPE.md`, and `preview.png`). The preview shows the recent-spaces picker over
+a running terminal. The installer has no third-party Python dependencies and
+makes no network requests. The `toodope-spaces` mod runs
 `hc`, `git`, and `code` commands and reads Git metadata from the workspaces it
 shows; these operations are part of its active-process, repository-status, and
 open-in-VS-Code features.
