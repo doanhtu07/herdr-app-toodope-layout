@@ -21,13 +21,13 @@ A Herdr layout with a fixed left workspace rail, active-dot tab bar, framed term
 
 ## Built from
 
-- `src/layouts/TooDope.json`: root row, fixed sidebar, tab bar, active-tab workspace, hidden Files/Changes stack, and status footer.
+- `layouts/TooDope.json`: root row, fixed sidebar, tab bar, active-tab workspace, hidden Files/Changes stack, and status footer.
 - `toodope-spaces`: workspace list, Git/worktree grouping, active-terminal and changed-file counts, copy-path and VS Code actions. Uses `spaces`, `machines`, `panes`, `terminals`, `hc`, `exec`, `watchFolder`, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
 - `toodope-tabs-active-dot`: tab bar, panel controls, tab interactions, and platform window buttons. Uses shared state, layout/window data, overlays, and tab/layout/window commands.
 - `toodope-workspace-status`: machine, agent, activity, Git status, and palette-key summary.
 - `toodope-pane-header`: the shipped pane header controls and status, plus a visible terminal ID that copies pane context when clicked.
 - Shipped Herdr mods used by the layout: `workspace-chrome`, `agents`, `pane`, `files`, and `changes`; the tab bar opens shipped `menu` and `new-menu` overlays.
-- Custom mod assets are included alongside their code under `src/mods/`.
+- Custom mod assets are included alongside their code under `mods/`.
 
 ## Watch out
 

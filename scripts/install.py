@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "src"
+SOURCE = ROOT / "TooDope"
 LAYOUT_FILES = ("TooDope.json", "toodope-main.json", "toodope-main-tab-dots.json")
 MODS = (
     "toodope-spaces",
