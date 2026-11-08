@@ -6,8 +6,9 @@ TooDope layout for Herdr App.
 
 ## Features
 
-- **Spaces panel:** active-terminal and file-change counts, Copy Path and Open in
-  VS Code buttons, and a workspace info tooltip.
+- **Spaces panel:** recent-space history with Back/Forward controls and a picker,
+  active-terminal and file-change counts, Copy Path and Open in VS Code buttons,
+  and a workspace info tooltip.
 - **Tabs:** an indicator for the tab with the active terminal.
 - **Pane header:** a button that copies the pane's full context.
 - **Bottom bar:** machine-wide active-terminal count, branch, and file changes.
@@ -45,8 +46,11 @@ python3 scripts/install.py --config "/path/to/herdr-app"
 ```
 
 It replaces only `layouts/TooDope.json` and the package's `mods/toodope-*`
-folders owned by this package. It does not touch other layouts, mods, settings,
-keys, or Herdr-managed layout click state. After installation, select it with:
+folders. It also adds a recent-spaces shortcut scoped to the TooDope layout in
+`keys.json` if that key is available: Cmd+Shift+J on macOS, Ctrl+Shift+J on
+Windows/Linux. Existing key bindings are preserved; a conflict is reported
+without being overwritten. It does not touch other layouts, mods, settings, or
+Herdr-managed layout click state. After installation, select it with:
 
 ```sh
 herdr-app do layout.switch --name TooDope

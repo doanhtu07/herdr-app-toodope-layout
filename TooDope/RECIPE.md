@@ -13,7 +13,7 @@ A Herdr layout with a fixed left workspace rail, active-dot tab bar, framed term
 
 ## How it behaves
 
-- Select a space; right-click opens its menu. Drag spaces to reorder within their machine. Worktrees are nested below their main checkout when Git metadata identifies the relationship.
+- Select a space; right-click opens its menu. Back/Forward in the Spaces header follows navigation history. The clock button or Cmd+Shift+J on macOS (Ctrl+Shift+J on Windows/Linux) opens a centered dialog of recent spaces; use ↑/↓ and Enter or click a row to switch, and Esc to close. Drag spaces to reorder within their machine. Worktrees are nested below their main checkout when Git metadata identifies the relationship.
 - Space rows show active terminal and changed-file counts; hover the info icon for repo/branch/ahead/behind details. Path and VS Code buttons copy the active folder or open it in VS Code.
 - Tabs can be selected, dragged to reorder, double-clicked to rename, right-clicked for their menu, and closed with the active tab's close button. Working tabs show a spinner; blocked and done tabs show a status marker; idle tabs have no status marker. Active tabs with a foreground process show a green dot. In the compact space rail, blocked/done use a solid dot and working/idle use a small dot colored by status.
 - The Files and Changes buttons show/hide the panel and switch its contents. That choice is remembered per space.
@@ -22,7 +22,8 @@ A Herdr layout with a fixed left workspace rail, active-dot tab bar, framed term
 ## Built from
 
 - `layouts/TooDope.json`: root row, fixed sidebar, tab bar, active-tab workspace, hidden Files/Changes stack, and status footer.
-- `toodope-spaces`: workspace list, Git/worktree grouping, active-terminal and changed-file counts, copy-path and VS Code actions. Uses `spaces`, `machines`, `panes`, `terminals`, `hc`, `exec`, `watchFolder`, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
+- `toodope-spaces`: workspace list, navigation history, Back/Forward and recent-space dialog controls, Git/worktree grouping, active-terminal and changed-file counts, copy-path and VS Code actions. Uses `spaces`, `machines`, `panes`, `terminals`, `hc`, `exec`, `watchFolder`, `nextCommand`, local storage, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
+- `toodope-space-history`: centered dialog listing recently visited spaces, opened by the clock button in the Spaces header.
 - `toodope-tabs-active-dot`: tab bar, panel controls, tab interactions, and platform window buttons. Uses shared state, layout/window data, overlays, and tab/layout/window commands.
 - `toodope-workspace-status`: machine, agent, activity, Git status, and palette-key summary.
 - `toodope-pane-header`: the shipped pane header controls and status, plus a visible terminal ID that copies pane context when clicked.

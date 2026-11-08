@@ -20,9 +20,13 @@ import {
   shared,
   setShared,
   watchFolder,
+  nextCommand,
   window,
   layout,
 } from 'herdr'
+
+const HISTORY_KEY = 'space.navigation'
+const HISTORY_LIMIT = 40
 
 function find(node, id) {
   if (node?.id === id) return node
@@ -66,6 +70,33 @@ async function launchCode(args, options) {
 
 const isHome = (path) =>
   path?.replace(/\/+$/, '') === home().replace(/\/+$/, '')
+
+function readHistory() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? 'null')
+
+    const entries = Array.isArray(stored?.entries)
+      ? stored.entries.filter((id) => typeof id === 'string')
+      : []
+
+    const requestedIndex = Number.isInteger(stored?.index)
+      ? stored.index
+      : entries.length - 1
+
+    const index = entries.length
+      ? Math.max(0, Math.min(requestedIndex, entries.length - 1))
+      : -1
+
+    const recent =
+      Array.isArray(stored?.recent) && stored.recent.length
+        ? stored.recent.filter((id) => typeof id === 'string')
+        : entries.slice().reverse()
+
+    return { entries, index, recent: [...new Set(recent)].slice(0, 20) }
+  } catch {
+    return { entries: [], index: -1, recent: [] }
+  }
+}
 
 function metadataHint(active, g) {
   const parts = [`${active} active terminal${active === 1 ? '' : 's'}`]
@@ -199,6 +230,11 @@ export default class Spaces extends View {
     this.pressed = null
     this.over = null
 
+    this.history = readHistory()
+    const active = spaces().find((s) => s.active)?.id
+    if (!this.recordActive(active) && this.touchRecent(active))
+      this.saveHistory()
+
     this.machines = []
     this.reconnecting = JSON.parse(
       localStorage.getItem('machines.reconnecting') ?? '{}',
@@ -212,6 +248,12 @@ export default class Spaces extends View {
     cx.timer.every(5000, (cx) => this.refreshForeground(cx))
     this.refreshMachines(cx)
     cx.timer.every(15000, (cx) => this.refreshMachines(cx))
+    cx.spawn(async () => {
+      for (;;) {
+        const command = await nextCommand()
+        if (command === 'recent') this.openHistory()
+      }
+    })
     // `git status` walks the whole tree, on another machine a process there:
     // only when its answer could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx))
@@ -285,13 +327,87 @@ export default class Spaces extends View {
   checkNew(cx) {
     const now = Date.now()
     const sp = spaces()
+    const historyChanged = this.recordActive(sp.find((s) => s.active)?.id)
     for (const s of sp) if (!this.shown.has(s.id)) this.born[s.id] ??= now
 
     const due = this.due(now, sp, panes())
     if (due.size) this.refreshGit(due, cx)
 
-    if (sp.some((s) => !this.shown.has(s.id)) || this.orderingDue(now))
+    if (
+      historyChanged ||
+      sp.some((s) => !this.shown.has(s.id)) ||
+      this.orderingDue(now)
+    )
       cx.notify()
+  }
+
+  saveHistory() {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(this.history))
+  }
+
+  recordActive(id) {
+    if (!id) return false
+    if (this.history.entries[this.history.index] === id) return false
+
+    const entries = this.history.entries.slice(0, this.history.index + 1)
+    entries.push(id)
+    if (entries.length > HISTORY_LIMIT)
+      entries.splice(0, entries.length - HISTORY_LIMIT)
+
+    this.touchRecent(id)
+    this.history = {
+      entries,
+      index: entries.length - 1,
+      recent: this.history.recent,
+    }
+    this.saveHistory()
+    return true
+  }
+
+  touchRecent(id) {
+    if (!id) return false
+    const recent = [id, ...this.history.recent.filter((space) => space !== id)]
+    const next = recent.slice(0, 20)
+    if (JSON.stringify(next) === JSON.stringify(this.history.recent))
+      return false
+    this.history.recent = next
+    return true
+  }
+
+  historyTarget(delta) {
+    const ids = new Set(spaces().map((s) => s.id))
+    for (
+      let index = this.history.index + delta;
+      index >= 0 && index < this.history.entries.length;
+      index += delta
+    )
+      if (ids.has(this.history.entries[index])) return index
+    return null
+  }
+
+  moveHistory(delta, cx) {
+    const index = this.historyTarget(delta)
+    if (index === null) return
+
+    this.history.index = index
+    const id = this.history.entries[index]
+    this.touchRecent(id)
+    this.saveHistory()
+    run('space.select', { id })
+    cx.notify()
+  }
+
+  openHistory() {
+    const ids = this.history.recent
+      .filter((id) => spaces().some((s) => s.id === id))
+      .slice(0, 10)
+    openOverlay({
+      mod: 'toodope-space-history',
+      kind: 'dialog',
+      width: 480,
+      height: Math.max(220, 160 + ids.length * 53),
+      props: { spaceIds: ids },
+    })
   }
 
   // Places whose git could have changed: new ones (a new space, a cd), where a
@@ -1090,6 +1206,28 @@ export default class Spaces extends View {
   render() {
     const t = theme()
     const collapsed = narrow()
+    const stop = (_e, cx) => cx.stop_propagation()
+
+    const navButton = (id, icon, label, enabled, action) =>
+      div()
+        .id(id)
+        .size(collapsed ? 20 : 22)
+        .flex_none()
+        .flex()
+        .items_center()
+        .justify_center()
+        .rounded(6)
+        .text_color(t.dim)
+        .when(enabled, (el) =>
+          el.hover((s) => s.bg(t.hover).text_color(t.foreground)),
+        )
+        .when(!enabled, (el) => el.opacity(0.38))
+        .tooltip(label)
+        .on_mouse_down('left', stop)
+        .on_click((_e, cx) => {
+          if (enabled) action(cx)
+        })
+        .child(svg(icon).size(13))
 
     const palette = ['ansi6', 'ansi3', 'ansi4', 'ansi5', 'ansi2', 'ansi1']
     const sp = spaces()
@@ -1159,25 +1297,57 @@ export default class Spaces extends View {
       .child(
         h_flex()
           .h(31)
-          .pl(16)
-          .pr(10)
+          .pl(collapsed ? 2 : 16)
+          .pr(collapsed ? 2 : 10)
           .items_center()
           .justify_between()
           .text_size(11.5)
           .text_color(t.dim)
           .when(!collapsed, (el) => el.child('Spaces'))
           .child(
-            div()
-              .id('space-new')
-              .size(26)
-              .flex_none()
-              .flex()
+            h_flex()
+              .gap(collapsed ? 0 : 2)
               .items_center()
-              .justify_center()
-              .rounded(6)
-              .hover((s) => s.bg(t.hover).text_color(t.foreground))
-              .on_click(() => run('space.new'))
-              .child(svg('mods/workspace-chrome/plus.svg').size(14)),
+              .children([
+                ...(!collapsed
+                  ? [
+                      navButton(
+                        'space-history-back',
+                        'mods/workspace-chrome/chevron-left.svg',
+                        'Back to previous space',
+                        this.historyTarget(-1) !== null,
+                        (cx) => this.moveHistory(-1, cx),
+                      ),
+                      navButton(
+                        'space-history-forward',
+                        'mods/workspace-chrome/chevron-right.svg',
+                        'Forward to next space',
+                        this.historyTarget(1) !== null,
+                        (cx) => this.moveHistory(1, cx),
+                      ),
+                    ]
+                  : []),
+                navButton(
+                  'space-history-open',
+                  'mods/workspace-chrome/clock.svg',
+                  'Recent spaces',
+                  this.history.entries.length > 0,
+                  () => this.openHistory(),
+                ),
+                div()
+                  .id('space-new')
+                  .size(collapsed ? 20 : 22)
+                  .flex_none()
+                  .flex()
+                  .items_center()
+                  .justify_center()
+                  .rounded(6)
+                  .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                  .on_mouse_down('left', stop)
+                  .on_click(() => run('space.new'))
+                  .tooltip('New space')
+                  .child(svg('mods/workspace-chrome/plus.svg').size(14)),
+              ]),
           ),
       )
       .child(
