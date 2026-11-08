@@ -6,9 +6,14 @@ TooDope layout for Herdr App.
 
 ## Features
 
-- **Spaces panel:** recent-space history with Back/Forward controls and a picker,
-  active-terminal and file-change counts, Copy Path and Open in VS Code buttons,
-  and a workspace info tooltip.
+- **Spaces panel:**
+  - Back/Forward navigation and a recent-spaces picker (clock
+    button or Cmd+Shift+J on macOS; Ctrl+Shift+J on Windows/Linux)
+  - Active-terminal count for space
+  - File-change count for space
+  - Copy absolute path button for space
+  - Open in VS Code button for space
+  - A space info tooltip
 - **Tabs:** an indicator for the tab with the active terminal.
 - **Pane header:** a button that copies the pane's full context.
 - **Bottom bar:** machine-wide active-terminal count, branch, and file changes.

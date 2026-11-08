@@ -1,6 +1,6 @@
 # TooDope
 
-A Herdr layout with a fixed left workspace rail, active-dot tab bar, framed terminal panes, an optional Files/Changes panel, and a compact workspace status footer. The Spaces mod groups worktrees under their main checkout and shows activity and Git changes.
+A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space navigation and a picker, richer workspace details and actions, an active-terminal tab indicator, pane-context copying, and a more informative status footer. Herdr's built-in Spaces view groups worktrees under their main checkout; TooDope adds activity and Git-change details.
 
 ![TooDope](preview.png)
 
@@ -22,7 +22,7 @@ A Herdr layout with a fixed left workspace rail, active-dot tab bar, framed term
 ## Built from
 
 - `layouts/TooDope.json`: root row, fixed sidebar, tab bar, active-tab workspace, hidden Files/Changes stack, and status footer.
-- `toodope-spaces`: workspace list, navigation history, Back/Forward and recent-space dialog controls, Git/worktree grouping, active-terminal and changed-file counts, copy-path and VS Code actions. Uses `spaces`, `machines`, `panes`, `terminals`, `hc`, `exec`, `watchFolder`, `nextCommand`, local storage, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
+- `toodope-spaces`: workspace list, navigation history, Back/Forward and recent-space dialog controls, active-terminal and changed-file counts, copy-path and VS Code actions. It uses Herdr's built-in Spaces/worktree data along with `machines`, `panes`, `terminals`, `hc`, `exec`, `watchFolder`, `nextCommand`, local storage, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
 - `toodope-space-history`: centered dialog listing recently visited spaces, opened by the clock button in the Spaces header.
 - `toodope-tabs-active-dot`: tab bar, panel controls, tab interactions, and platform window buttons. Uses shared state, layout/window data, overlays, and tab/layout/window commands.
 - `toodope-workspace-status`: machine, agent, activity, Git status, and palette-key summary.
