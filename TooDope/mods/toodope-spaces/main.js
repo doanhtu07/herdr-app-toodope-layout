@@ -20,7 +20,6 @@ import {
   shared,
   setShared,
   watchFolder,
-  nextCommand,
   window,
   layout,
 } from 'herdr'
@@ -73,7 +72,11 @@ const isHome = (path) =>
 
 function readHistory() {
   try {
-    const stored = JSON.parse(localStorage.getItem(HISTORY_KEY) ?? 'null')
+    const sharedHistory = shared(HISTORY_KEY)
+    const stored =
+      sharedHistory && typeof sharedHistory === 'object'
+        ? sharedHistory
+        : JSON.parse(localStorage.getItem(HISTORY_KEY) ?? 'null')
 
     const entries = Array.isArray(stored?.entries)
       ? stored.entries.filter((id) => typeof id === 'string')
@@ -231,6 +234,9 @@ export default class Spaces extends View {
     this.over = null
 
     this.history = readHistory()
+    // Share navigation with the status bar, which stays visible when this
+    // sidebar mod is hidden. The localStorage fallback above imports old data.
+    setShared(HISTORY_KEY, this.history)
     const active = spaces().find((s) => s.active)?.id
     if (!this.recordActive(active) && this.touchRecent(active))
       this.saveHistory()
@@ -248,12 +254,6 @@ export default class Spaces extends View {
     cx.timer.every(5000, (cx) => this.refreshForeground(cx))
     this.refreshMachines(cx)
     cx.timer.every(15000, (cx) => this.refreshMachines(cx))
-    cx.spawn(async () => {
-      for (;;) {
-        const command = await nextCommand()
-        if (command === 'recent') this.openHistory()
-      }
-    })
     // `git status` walks the whole tree, on another machine a process there:
     // only when its answer could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx))
@@ -343,6 +343,7 @@ export default class Spaces extends View {
 
   saveHistory() {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(this.history))
+    setShared(HISTORY_KEY, this.history)
   }
 
   recordActive(id) {

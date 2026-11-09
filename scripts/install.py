@@ -22,7 +22,8 @@ MODS = (
     "toodope-workspace-status",
     "toodope-pane-header",
 )
-SHORTCUT_ACTION = "toodope-spaces.recent"
+SHORTCUT_ACTION = "toodope-workspace-status.recent"
+LEGACY_SHORTCUT_ACTION = "toodope-spaces.recent"
 SHORTCUT_SECTION = "layout:TooDope"
 SHORTCUT_CONTEXTS = ("global", "terminal", SHORTCUT_SECTION)
 
@@ -134,18 +135,26 @@ def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool
                 True,
             )
         if key in bindings and bindings[key] != SHORTCUT_ACTION:
+            if (
+                section_name == SHORTCUT_SECTION
+                and bindings[key] == LEGACY_SHORTCUT_ACTION
+            ):
+                continue
+
             existing = bindings[key]
+
             return (
                 f"Warning: {label} is already bound to {existing!r} in "
                 f"{section_name!r}; left {path} unchanged.",
                 True,
             )
 
-    global_bindings = keys.setdefault(SHORTCUT_SECTION, {})
-    if key in global_bindings:
+    layout_bindings = keys.setdefault(SHORTCUT_SECTION, {})
+    if layout_bindings.get(key) == SHORTCUT_ACTION:
         return (f"{label} already opens recent spaces in TooDope.", False)
 
-    global_bindings[key] = SHORTCUT_ACTION
+    migrated = layout_bindings.get(key) == LEGACY_SHORTCUT_ACTION
+    layout_bindings[key] = SHORTCUT_ACTION
     write_path = path
     temporary_path: Path | None = None
     try:
@@ -177,6 +186,11 @@ def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool
                 pass
         return (f"Warning: couldn't add {label} to {path}: {exc}.", True)
 
+    if migrated:
+        return (
+            f"Updated {label} to open recent spaces in the TooDope layout.",
+            False,
+        )
     return (f"Added {label} to open recent spaces in the TooDope layout.", False)
 
 

@@ -1,8 +1,138 @@
-import { View, div, svg } from 'gpui-kit'
+import { View, div, image, svg } from 'gpui-kit'
 import { h_flex } from 'gpui-base'
-import { spaces, agents, shared, theme, run, window, keys } from 'herdr'
+import {
+  spaces,
+  panes,
+  agents,
+  shared,
+  theme,
+  run,
+  window,
+  keys,
+  nextCommand,
+  openOverlay,
+  exec,
+  hc,
+  home,
+  notify,
+} from 'herdr'
+
+const HISTORY_KEY = 'space.navigation'
+
+function place(space, ps) {
+  const tabs = new Set((space.tabs ?? []).map((tab) => tab.id))
+  return ps.find((pane) => tabs.has(pane.tab) && pane.cwd)?.cwd || space.folder
+}
+
+const isWindowsPath = (path) => /^[a-z]:[\\/]/i.test(path) || /^\\\\/.test(path)
+const powershellQuote = (value) => `'${String(value).replace(/'/g, "''")}'`
+
+async function launchCode(args, options) {
+  if (!isWindowsPath(home())) return exec('code', args, options)
+
+  const command = `& 'code' ${args.map(powershellQuote).join(' ')}; if ($null -ne $LASTEXITCODE) { exit $LASTEXITCODE }`
+
+  return exec(
+    'powershell.exe',
+    ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', command],
+    options,
+  )
+}
+
+const isHome = (path) =>
+  path?.replace(/\/+$/, '') === home().replace(/\/+$/, '')
 
 export default class WorkspaceStatus extends View {
+  // The status view stays mounted when the sidebar is hidden, so the
+  // recent-spaces shortcut remains available in that state.
+  init(_props, cx) {
+    cx.spawn(async () => {
+      for (;;) {
+        const command = await nextCommand()
+        if (command === 'recent') this.openHistory()
+      }
+    })
+  }
+
+  openHistory() {
+    const stored = shared(HISTORY_KEY)
+    const entries = Array.isArray(stored?.entries)
+      ? stored.entries.filter((id) => typeof id === 'string')
+      : []
+    const recent =
+      Array.isArray(stored?.recent) && stored.recent.length
+        ? stored.recent.filter((id) => typeof id === 'string')
+        : entries.slice().reverse()
+
+    const ids = recent
+      .filter((id) => spaces().some((space) => space.id === id))
+      .slice(0, 10)
+
+    openOverlay({
+      mod: 'toodope-space-history',
+      kind: 'dialog',
+      width: 480,
+      height: Math.max(220, 160 + ids.length * 53),
+      props: { spaceIds: ids },
+    })
+  }
+
+  copyPath(cwd, cx) {
+    if (!cwd) return
+    cx.write_to_clipboard(cwd)
+    notify({ title: 'Copied absolute path', body: cwd, level: 'success' })
+  }
+
+  openProject(space, cwd, cx) {
+    if (!cwd || space.name === '~' || isHome(cwd)) return
+
+    cx.spawn(async () => {
+      try {
+        const args = ['--new-window']
+        let options = { cwd }
+
+        if (space.machine) {
+          const result = await hc(['machine', 'ls', '--json'])
+          if (result.code !== 0)
+            throw new Error(
+              result.stderr || result.stdout || 'Could not list machines.',
+            )
+
+          const machine = (JSON.parse(result.stdout).machines ?? []).find(
+            (item) => item.name === space.machine,
+          )
+          if (!machine?.target)
+            throw new Error(
+              `No SSH target is configured for machine ${space.machine}.`,
+            )
+          if (machine.via)
+            throw new Error(
+              'This machine uses a Herdr via connection; configure an equivalent SSH host for VS Code Remote-SSH.',
+            )
+
+          args.push('--remote', `ssh-remote+${machine.target}`, cwd)
+          options = { cwd: home() }
+        } else {
+          args.push(cwd)
+        }
+
+        const result = await launchCode(args, options)
+        if (result.code !== 0)
+          throw new Error(
+            result.stderr ||
+              result.stdout ||
+              `VS Code exited with code ${result.code}.`,
+          )
+      } catch (error) {
+        notify({
+          title: "Couldn't open project in VS Code",
+          body: String(error.message ?? error),
+          level: 'error',
+        })
+      }
+    })
+  }
+
   // The palette key as actually bound, not a hardcoded one; without a
   // binding the hint stays useful ("commands") instead of lying.
   hint(t) {
@@ -35,6 +165,8 @@ export default class WorkspaceStatus extends View {
   render() {
     const t = theme()
     const space = spaces().find((s) => s.active)
+    const cwd = space ? place(space, panes()) : null
+    const project = Boolean(cwd) && space.name !== '~' && !isHome(cwd)
     const list = agents()
     const needs = list.filter((a) => a.status === 'blocked').length
     const active = Object.values(
@@ -113,6 +245,55 @@ export default class WorkspaceStatus extends View {
         ),
       )
       .child(div().flex_1())
+      .when(Boolean(cwd), (el) =>
+        el.child(
+          h_flex()
+            .gap(2)
+            .items_center()
+            .child(
+              div()
+                .id('status-copy-path')
+                .size(23)
+                .flex_none()
+                .flex()
+                .items_center()
+                .justify_center()
+                .rounded(5)
+                .cursor_pointer()
+                .text_color(t.dim)
+                .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                .tooltip('Copy absolute path')
+                .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
+                .on_click((_e, cx) => {
+                  cx.stop_propagation()
+                  this.copyPath(cwd, cx)
+                })
+                .child(svg('mods/toodope-spaces/copy.svg').size(16)),
+            )
+            .when(project, (controls) =>
+              controls.child(
+                div()
+                  .id('status-open-vscode')
+                  .size(23)
+                  .flex_none()
+                  .flex()
+                  .items_center()
+                  .justify_center()
+                  .rounded(5)
+                  .cursor_pointer()
+                  .text_color(t.dim)
+                  .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                  .tooltip('Open project in VS Code')
+                  .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
+                  .on_click((_e, cx) => {
+                    cx.stop_propagation()
+                    this.openProject(space, cwd, cx)
+                  })
+                  .child(image('mods/toodope-spaces/vscode.svg').size(16)),
+              ),
+            ),
+        ),
+      )
       .child(
         div()
           .id('palette')
