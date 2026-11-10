@@ -9,7 +9,6 @@ import {
   spaces,
   machines,
   panes,
-  terminals,
   run,
   openOverlay,
   exec,
@@ -115,25 +114,7 @@ function metadataHint(active, g) {
   return parts.join(' · ')
 }
 
-function hasActiveProcess(info, terminal, foregroundActive) {
-  const program = info?.program ?? terminal?.program
-
-  if (program?.agent) return (info?.status ?? terminal?.status) === 'working'
-  if (program?.shell === false) return true
-
-  // A shell stays the reported program while it runs a foreground script.
-  // Core exposes that process group's leader separately from the shell PID.
-  if (
-    Number.isInteger(terminal?.pid) &&
-    Number.isInteger(terminal?.foreground?.pid) &&
-    terminal.foreground.pid !== terminal.pid
-  )
-    return true
-
-  return foregroundActive?.[terminal?.address] === true
-}
-
-// Changes made outside Herdr (an editor's save, a commit in another app): looked
+// Changes made outside Herdr (an editor's save, a commit in another app): look
 // for this often, in repos the list shows, while the window is in front.
 const FALLBACK = 60000
 
@@ -157,79 +138,6 @@ export function tone(t, status) {
   return t[status] ?? t.unknown
 }
 
-// Count foreground processes, not shells waiting at a prompt. Agents count
-// only while working; other non-shell foreground programs count as active.
-function activeTerminalCounts(
-  sp,
-  ps,
-  all,
-  foregroundActive,
-  tabCounts,
-  activeBySpace,
-) {
-  const tabSpace = new Map()
-  for (const s of sp) for (const tab of s.tabs ?? []) tabSpace.set(tab.id, s.id)
-
-  const owner = new Map()
-  const tabOwner = new Map()
-  const paneByAddress = new Map()
-
-  for (const p of ps)
-    if (p.terminal && tabSpace.has(p.tab)) {
-      owner.set(p.terminal, tabSpace.get(p.tab))
-      tabOwner.set(p.terminal, p.tab)
-    }
-
-  for (const p of ps) if (p.terminal) paneByAddress.set(p.terminal, p)
-
-  let grew = true
-
-  while (grew) {
-    grew = false
-
-    for (const terminal of all) {
-      if (
-        terminal.parent &&
-        owner.has(terminal.parent) &&
-        !owner.has(terminal.address)
-      ) {
-        owner.set(terminal.address, owner.get(terminal.parent))
-        tabOwner.set(terminal.address, tabOwner.get(terminal.parent))
-        grew = true
-      }
-    }
-  }
-
-  const byAddress = new Map(all.map((terminal) => [terminal.address, terminal]))
-  const counts = new Map(sp.map((s) => [s.id, 0]))
-
-  for (const [address, space] of owner) {
-    const terminal = byAddress.get(address)
-
-    if (
-      terminal?.state === 'live' &&
-      hasActiveProcess(paneByAddress.get(address), terminal, foregroundActive)
-    ) {
-      counts.set(space, (counts.get(space) ?? 0) + 1)
-      const tab = tabOwner.get(address)
-      if (tab) tabCounts.set(tab, (tabCounts.get(tab) ?? 0) + 1)
-
-      const pane = paneByAddress.get(address)
-      const program = pane?.program ?? terminal.program
-      activeBySpace[space] ??= []
-      activeBySpace[space].push({
-        terminal: address,
-        pane: pane?.pane,
-        tab,
-        name: pane?.title || program?.name || 'Terminal',
-        directory: pane?.cwd || terminal.cwd,
-      })
-    }
-  }
-
-  return counts
-}
-
 export default class Spaces extends View {
   init(_props, cx) {
     this.git = {} // where() -> { name, branch, ahead, behind, changed, repo, linked }, null: not a repo
@@ -240,8 +148,6 @@ export default class Spaces extends View {
     this.busy = {} // pane -> an agent working or a program in front of its shell
     this.ready = {} // machine -> its layout was readable at the last look
     this.at = {} // space -> its where() at the last look
-    this.foregroundActive = {} // shell terminals with a foreground process group
-    this.foregroundRefreshing = false
 
     this.watching = new Set() // local repos' git folders
     // Spaces made while this runs wait (at most a moment) for their git, so a
@@ -268,78 +174,11 @@ export default class Spaces extends View {
       JSON.parse(localStorage.getItem('machines.folded') ?? '[]'),
     )
 
-    this.refreshForeground(cx)
-    cx.timer.every(5000, (cx) => this.refreshForeground(cx))
     this.refreshMachines(cx)
     cx.timer.every(15000, (cx) => this.refreshMachines(cx))
     // `git status` walks the whole tree, on another machine a process there:
     // only when its answer could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx))
-  }
-
-  refreshForeground(cx) {
-    if (this.foregroundRefreshing) return
-
-    const all = terminals()
-
-    const panesByAddress = new Map(
-      panes()
-        .filter((p) => p.terminal)
-        .map((p) => [p.terminal, p]),
-    )
-
-    const candidates = all.filter((terminal) => {
-      if (terminal.state !== 'live') return false
-      const info = panesByAddress.get(terminal.address) ?? terminal
-      const program = info.program ?? terminal.program
-      return !program?.agent && program?.shell !== false
-    })
-
-    const live = new Set(
-      all
-        .filter((terminal) => terminal.state === 'live')
-        .map((terminal) => terminal.address),
-    )
-
-    this.foregroundRefreshing = true
-
-    cx.spawn(async (cx) => {
-      const next = { ...this.foregroundActive }
-
-      try {
-        for (const address of Object.keys(next))
-          if (!live.has(address)) delete next[address]
-
-        const results = await Promise.all(
-          candidates.map(async (terminal) => {
-            try {
-              const result = await hc(['get', terminal.address, '--json'])
-              if (result.code !== 0) return null
-
-              const current = JSON.parse(result.stdout)
-
-              return [
-                terminal.address,
-                Number.isInteger(current.pid) &&
-                  Number.isInteger(current.foreground?.pid) &&
-                  current.foreground.pid !== current.pid,
-              ]
-            } catch {
-              return null
-            }
-          }),
-        )
-
-        for (const result of results) if (result) next[result[0]] = result[1]
-
-        if (JSON.stringify(next) !== JSON.stringify(this.foregroundActive)) {
-          this.foregroundActive = next
-          cx.notify()
-        }
-      } finally {
-        this.foregroundRefreshing = false
-      }
-    })
   }
 
   checkNew(cx) {
@@ -1255,38 +1094,9 @@ export default class Spaces extends View {
     const sp = spaces()
     const ps = panes()
 
-    const activeTabCounts = new Map()
-    const activeBySpace = {}
-    const activeCounts = activeTerminalCounts(
-      sp,
-      ps,
-      terminals(),
-      this.foregroundActive,
-      activeTabCounts,
-      activeBySpace,
+    const activeCounts = new Map(
+      Object.entries(shared('space.activeTerminalCounts') ?? {}),
     )
-
-    const sharedActiveCounts = Object.fromEntries(activeCounts)
-    if (
-      JSON.stringify(shared('space.activeTerminalCounts') ?? {}) !==
-      JSON.stringify(sharedActiveCounts)
-    ) {
-      setShared('space.activeTerminalCounts', sharedActiveCounts)
-    }
-
-    if (
-      JSON.stringify(shared('space.activeTerminals') ?? {}) !==
-      JSON.stringify(activeBySpace)
-    )
-      setShared('space.activeTerminals', activeBySpace)
-
-    const sharedActiveTabCounts = Object.fromEntries(activeTabCounts)
-    if (
-      JSON.stringify(shared('space.activeTabTerminalCounts') ?? {}) !==
-      JSON.stringify(sharedActiveTabCounts)
-    ) {
-      setShared('space.activeTabTerminalCounts', sharedActiveTabCounts)
-    }
 
     const changeCounts = {}
     for (const s of sp) {

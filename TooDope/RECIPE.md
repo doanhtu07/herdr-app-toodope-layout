@@ -24,10 +24,10 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 ## Built from
 
 - `layouts/TooDope.json`: root row, fixed sidebar, tab bar, active-tab workspace, hidden Files/Changes stack, and status footer.
-- `toodope-spaces`: workspace list, navigation history, Back/Forward and recent-space dialog controls, active-terminal and changed-file counts, copy-path and VS Code actions. It uses Herdr's built-in Spaces/worktree data along with `machines`, `panes`, `terminals`, `hc`, `exec`, `watchFolder`, `nextCommand`, local storage, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
+- `toodope-spaces`: workspace list, navigation history, Back/Forward and recent-space dialog controls, active-terminal and changed-file counts, copy-path and VS Code actions. It uses Herdr's built-in Spaces/worktree data along with `machines`, `panes`, `hc`, `exec`, `watchFolder`, `nextCommand`, local storage, shared state, overlays, and `space.select`/`space.move`/`space.new` commands. It runs `hc`, `git`, and `code` and reads Git metadata in displayed workspaces; it does not make network requests.
 - `toodope-space-history`: centered dialog listing recently visited spaces, opened by the clock button in the Spaces header.
 - `toodope-tabs-active-dot`: tab bar, panel controls, tab interactions, and platform window buttons. Uses shared state, layout/window data, overlays, and tab/layout/window commands.
-- `toodope-workspace-status`: machine, agent, activity, Git status, and palette-key summary.
+- `toodope-workspace-status`: machine, agent, active-terminal activity/counts, Git status, and palette-key summary. It keeps terminal activity data fresh even while the sidebar is closed.
 - `toodope-active-terminals`: centered dialog listing active terminals grouped by space, with navigation to the selected terminal.
 - `toodope-pane-header`: the shipped pane header controls and status, plus a visible terminal ID that copies pane context when clicked.
 - Shipped Herdr mods used by the layout: `workspace-chrome`, `agents`, `pane`, `files`, and `changes`; the tab bar opens shipped `menu` and `new-menu` overlays.
@@ -46,3 +46,4 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 - `herdr-app check` passes for all six custom mods (substitute the installed config path).
 - The layout appears as `TooDope` and `herdr-app do layout.switch --name TooDope` opens the layout.
 - Selecting spaces/tabs, toggling Files/Changes, and viewing pane headers/footer work without a mod error.
+- The bottom-bar active-terminal count updates while the sidebar remains closed.
