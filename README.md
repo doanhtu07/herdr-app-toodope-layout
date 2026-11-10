@@ -16,7 +16,7 @@ TooDope layout for Herdr App.
   - A space info tooltip
 - **Tabs:** an indicator for the tab with the active terminal.
 - **Pane header:** a button that copies the pane's full context.
-- **Bottom bar:** active-space path and VS Code actions, plus machine-wide active-terminal count, branch, and file changes.
+- **Bottom bar:** active-space path and VS Code actions, plus machine-wide active-terminal count, branch, and file changes. Click the active-terminal count to see active terminals grouped by space.
 
 ## Development
 

@@ -61,24 +61,26 @@ export default class PaneHeader extends View {
     const identifier = terminal ?? pane
     const space = spaces().find((s) => s.tabs?.some((tab) => tab.id === p.tab))
     const tab = space?.tabs?.find((item) => item.id === p.tab)
-    const details = [
-      ['Terminal ID', terminal],
-      ['Pane ID', pane],
-      ['Tab ID', p.tab],
-      ['Tab', tab?.name],
-      ['Space ID', space?.id],
-      ['Space', space?.name],
-      ['Program', p.program?.name],
-      ['App', p.app],
-      ['Directory', p.cwd],
-      ['Branch', p.branch],
-      ['Status', p.status],
-    ]
-      .filter(
-        ([, value]) => value !== undefined && value !== null && value !== '',
-      )
-      .map(([label, value]) => `${label}: ${value}`)
-      .join('\n')
+    const details =
+      [
+        ['Terminal ID', terminal],
+        ['Pane ID', pane],
+        ['Tab ID', p.tab],
+        ['Tab', tab?.name],
+        ['Space ID', space?.id],
+        ['Space', space?.name],
+        ['Program', p.program?.name],
+        ['App', p.app],
+        ['Directory', p.cwd],
+        ['Branch', p.branch],
+        ['Status', p.status],
+      ]
+        .filter(
+          ([, value]) => value !== undefined && value !== null && value !== '',
+        )
+        .map(([label, value]) => `${label}: ${value}`)
+        .join('\n') +
+      '\n\nInstruction: Use herdr-core (hc) for these pane details, not herdr.'
     const identifierHint = terminal
       ? `Terminal ID: ${terminal}\nPane ID: ${pane}\nClick to copy all details`
       : `Pane ID: ${pane}\nClick to copy all details`

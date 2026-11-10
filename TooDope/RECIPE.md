@@ -9,13 +9,14 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 - A 268px left rail with a 46px top brand/header block, equally weighted Spaces and Agents lists (each at least 90px), and a 69px footer.
 - A 42px top tab bar with active-tab indicator, tab status, a new-tab menu, Files/Changes buttons, and window controls where the platform draws them.
 - The main workspace uses 8px outer padding and gaps. Each pane has a 30px header with its short terminal ID pinned at the far right; clicking it copies terminal, pane, tab, and space details. Panes have 10px rounded corners, a border/focus treatment, and 14×12px terminal padding. The optional right panel is 368px wide (minimum 280px), starts hidden, and switches between Files and Changes.
-- A 28px status footer shows the current machine, agent counts, active terminals, branch/change counts when available, active-space copy-path and VS Code actions, and the command-palette shortcut.
+- A 28px status footer shows the current machine, agent counts, active terminals, branch/change counts when available, active-space copy-path and VS Code actions, and the command-palette shortcut. Click the active-terminal count to open a centered list grouped by space; rows show only the tab name (or tab number when unnamed), not terminal or pane IDs or paths, with visible spacing between entries. Use ↑/↓ and Enter or click a row to jump to its tab and pane, and Esc to close. Keyboard navigation keeps the selected row visible while scrolling.
 
 ## How it behaves
 
-- Select a space; right-click opens its menu. Back/Forward in the Spaces header follows navigation history. The clock button or Cmd+Shift+J on macOS (Ctrl+Shift+J on Windows/Linux) opens a centered dialog of recent spaces; use ↑/↓ and Enter or click a row to switch, and Esc to close. Drag spaces to reorder within their machine. Worktrees are nested below their main checkout when Git metadata identifies the relationship.
+- Select a space; right-click opens its menu. Back/Forward in the Spaces header follows navigation history. The clock button or Cmd+Shift+J on macOS (Ctrl+Shift+J on Windows/Linux) opens a centered dialog of recent spaces; use ↑/↓ and Enter or click a row to switch, and Esc to close. Keyboard navigation keeps the selected row visible while scrolling. Drag spaces to reorder within their machine. Worktrees are nested below their main checkout when Git metadata identifies the relationship.
 - Space rows show active terminal and changed-file counts; hover the info icon for repo/branch/ahead/behind details. Path and VS Code buttons copy the active folder or open it in VS Code.
 - The status footer's path and VS Code buttons act on the active space, so they remain available while the sidebar is closed.
+- Click the status footer's active-terminal count to browse active processes across spaces. Use ↑/↓ to navigate, Enter to open the selected terminal, and Esc to close. Idle shells and non-working agents are excluded.
 - Tabs can be selected, dragged to reorder, double-clicked to rename, right-clicked for their menu, and closed with the active tab's close button. Working tabs show a spinner; blocked and done tabs show a status marker; idle tabs have no status marker. Active tabs with a foreground process show a green dot. In the compact space rail, blocked/done use a solid dot and working/idle use a small dot colored by status.
 - The Files and Changes buttons show/hide the panel and switch its contents. That choice is remembered per space.
 - Agent and workspace status colors follow the current Herdr theme. Space avatar colors are saved in shared Herdr state.
@@ -27,6 +28,7 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 - `toodope-space-history`: centered dialog listing recently visited spaces, opened by the clock button in the Spaces header.
 - `toodope-tabs-active-dot`: tab bar, panel controls, tab interactions, and platform window buttons. Uses shared state, layout/window data, overlays, and tab/layout/window commands.
 - `toodope-workspace-status`: machine, agent, activity, Git status, and palette-key summary.
+- `toodope-active-terminals`: centered dialog listing active terminals grouped by space, with navigation to the selected terminal.
 - `toodope-pane-header`: the shipped pane header controls and status, plus a visible terminal ID that copies pane context when clicked.
 - Shipped Herdr mods used by the layout: `workspace-chrome`, `agents`, `pane`, `files`, and `changes`; the tab bar opens shipped `menu` and `new-menu` overlays.
 - Custom mod assets are included alongside their code under `mods/`.
@@ -41,6 +43,6 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 
 ## Done when
 
-- `herdr-app check` passes for all four custom mods (substitute the installed config path).
+- `herdr-app check` passes for all six custom mods (substitute the installed config path).
 - The layout appears as `TooDope` and `herdr-app do layout.switch --name TooDope` opens the layout.
 - Selecting spaces/tabs, toggling Files/Changes, and viewing pane headers/footer work without a mod error.

@@ -159,7 +159,14 @@ export function tone(t, status) {
 
 // Count foreground processes, not shells waiting at a prompt. Agents count
 // only while working; other non-shell foreground programs count as active.
-function activeTerminalCounts(sp, ps, all, foregroundActive, tabCounts) {
+function activeTerminalCounts(
+  sp,
+  ps,
+  all,
+  foregroundActive,
+  tabCounts,
+  activeBySpace,
+) {
   const tabSpace = new Map()
   for (const s of sp) for (const tab of s.tabs ?? []) tabSpace.set(tab.id, s.id)
 
@@ -206,6 +213,17 @@ function activeTerminalCounts(sp, ps, all, foregroundActive, tabCounts) {
       counts.set(space, (counts.get(space) ?? 0) + 1)
       const tab = tabOwner.get(address)
       if (tab) tabCounts.set(tab, (tabCounts.get(tab) ?? 0) + 1)
+
+      const pane = paneByAddress.get(address)
+      const program = pane?.program ?? terminal.program
+      activeBySpace[space] ??= []
+      activeBySpace[space].push({
+        terminal: address,
+        pane: pane?.pane,
+        tab,
+        name: pane?.title || program?.name || 'Terminal',
+        directory: pane?.cwd || terminal.cwd,
+      })
     }
   }
 
@@ -406,7 +424,10 @@ export default class Spaces extends View {
       mod: 'toodope-space-history',
       kind: 'dialog',
       width: 480,
-      height: Math.max(220, 160 + ids.length * 53),
+      height: Math.min(
+        620,
+        Math.max(220, 160 + Math.min(ids.length * 53, 420)),
+      ),
       props: { spaceIds: ids },
     })
   }
@@ -1235,12 +1256,14 @@ export default class Spaces extends View {
     const ps = panes()
 
     const activeTabCounts = new Map()
+    const activeBySpace = {}
     const activeCounts = activeTerminalCounts(
       sp,
       ps,
       terminals(),
       this.foregroundActive,
       activeTabCounts,
+      activeBySpace,
     )
 
     const sharedActiveCounts = Object.fromEntries(activeCounts)
@@ -1250,6 +1273,12 @@ export default class Spaces extends View {
     ) {
       setShared('space.activeTerminalCounts', sharedActiveCounts)
     }
+
+    if (
+      JSON.stringify(shared('space.activeTerminals') ?? {}) !==
+      JSON.stringify(activeBySpace)
+    )
+      setShared('space.activeTerminals', activeBySpace)
 
     const sharedActiveTabCounts = Object.fromEntries(activeTabCounts)
     if (

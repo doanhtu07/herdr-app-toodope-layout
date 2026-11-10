@@ -72,8 +72,46 @@ export default class WorkspaceStatus extends View {
       mod: 'toodope-space-history',
       kind: 'dialog',
       width: 480,
-      height: Math.max(220, 160 + ids.length * 53),
+      height: Math.min(
+        620,
+        Math.max(220, 160 + Math.min(ids.length * 53, 420)),
+      ),
       props: { spaceIds: ids },
+    })
+  }
+
+  openActiveTerminals() {
+    const active = shared('space.activeTerminals') ?? {}
+    const byId = new Map(spaces().map((space) => [space.id, space]))
+    const groups = Object.entries(active)
+      .filter(([, terminals]) => Array.isArray(terminals) && terminals.length)
+      .map(([id, terminals]) => {
+        const space = byId.get(id)
+        return {
+          space: {
+            id,
+            name: space?.name ?? id,
+            machine: space?.machine,
+            tabs: space?.tabs?.map(({ id: tabId, name }) => ({
+              id: tabId,
+              name,
+            })),
+          },
+          terminals,
+        }
+      })
+    const total = groups.reduce(
+      (count, group) => count + group.terminals.length,
+      0,
+    )
+    const listHeight = Math.min(420, total * 56 + groups.length * 34)
+
+    openOverlay({
+      mod: 'toodope-active-terminals',
+      kind: 'dialog',
+      width: 520,
+      height: Math.min(620, Math.max(210, 170 + listHeight)),
+      props: { groups },
     })
   }
 
@@ -215,11 +253,19 @@ export default class WorkspaceStatus extends View {
           )
           .child(
             h_flex()
+              .id('status-active-terminals')
               .gap(6)
               .items_center()
+              .cursor_pointer()
+              .hover((s) => s.text_color(t.foreground))
               .tooltip(
-                'Terminals with a foreground process; idle shells and non-working agents are excluded',
+                'View active terminals by space; idle shells and non-working agents are excluded',
               )
+              .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
+              .on_click((_e, cx) => {
+                cx.stop_propagation()
+                this.openActiveTerminals()
+              })
               .child(svg('mods/workspace-chrome/terminal.svg').size(13))
               .child(`${active} active`),
           ),

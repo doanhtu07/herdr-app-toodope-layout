@@ -14,14 +14,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "TooDope"
-LAYOUT_FILES = ("TooDope.json", "toodope-main.json", "toodope-main-tab-dots.json")
-MODS = (
-    "toodope-spaces",
-    "toodope-space-history",
-    "toodope-tabs-active-dot",
-    "toodope-workspace-status",
-    "toodope-pane-header",
-)
 SHORTCUT_ACTION = "toodope-workspace-status.recent"
 LEGACY_SHORTCUT_ACTION = "toodope-spaces.recent"
 SHORTCUT_SECTION = "layout:TooDope"
@@ -83,16 +75,31 @@ def remove_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
-def validate_sources() -> None:
-    layout = SOURCE / "layouts" / "TooDope.json"
+def validate_sources() -> tuple[tuple[str, ...], tuple[str, ...]]:
+    layouts = SOURCE / "layouts"
+    mods = SOURCE / "mods"
+    layout_names = tuple(sorted(path.name for path in layouts.glob("*.json")))
+    mod_names: tuple[str, ...] = ()
+    if mods.is_dir():
+        mod_names = tuple(
+            sorted(
+                path.name
+                for path in mods.iterdir()
+                if path.is_dir() and path.name.startswith("toodope-")
+            )
+        )
 
-    if not layout.is_file():
-        raise RuntimeError(f"Packaged layout is missing: {layout}")
+    if not layout_names:
+        raise RuntimeError(f"No packaged layouts found: {layouts}")
+    if not mod_names:
+        raise RuntimeError(f"No packaged TooDope mods found: {mods}")
 
-    for name in MODS:
+    for name in mod_names:
         folder = SOURCE / "mods" / name
         if not (folder / "main.js").is_file() or not (folder / "mod.json").is_file():
             raise RuntimeError(f"Packaged mod is incomplete: {folder}")
+
+    return layout_names, mod_names
 
 
 def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool]:
@@ -194,25 +201,27 @@ def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool
     return (f"Added {label} to open recent spaces in the TooDope layout.", False)
 
 
-def install(config: Path) -> None:
-    validate_sources()
+def install(config: Path) -> int:
+    layout_names, mod_names = validate_sources()
     layouts = config / "layouts"
     mods = config / "mods"
     layouts.mkdir(parents=True, exist_ok=True)
     mods.mkdir(parents=True, exist_ok=True)
 
-    # Remove only this package's layout names and module directories.
-    for name in LAYOUT_FILES:
+    # Replace only layouts and mods shipped by this package.
+    for name in layout_names:
         remove_path(layouts / name)
-    for name in MODS:
+    for name in mod_names:
         remove_path(mods / name)
 
-    shutil.copy2(SOURCE / "layouts" / "TooDope.json", layouts / "TooDope.json")
-    for name in MODS:
+    for name in layout_names:
+        shutil.copy2(SOURCE / "layouts" / name, layouts / name)
+    for name in mod_names:
         shutil.copytree(SOURCE / "mods" / name, mods / name)
 
     message, warning = merge_shortcut(config)
     print(message, file=sys.stderr if warning else sys.stdout)
+    return len(mod_names)
 
 
 def main() -> int:
@@ -224,12 +233,12 @@ def main() -> int:
 
     try:
         config = find_config(args.config)
-        install(config)
+        mod_count = install(config)
     except (OSError, RuntimeError) as exc:
         print(f"TooDope install failed: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Installed TooDope layout and {len(MODS)} mods into {config}")
+    print(f"Installed TooDope layout and {mod_count} mods into {config}")
     print("Select it in Herdr with: herdr-app do layout.switch --name TooDope")
 
     return 0
