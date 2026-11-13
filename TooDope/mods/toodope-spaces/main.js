@@ -21,6 +21,7 @@ import {
   watchFolder,
   window,
   layout,
+  props,
 } from 'herdr'
 
 const HISTORY_KEY = 'space.navigation'
@@ -1141,9 +1142,10 @@ export default class Spaces extends View {
           .pr(collapsed ? 2 : 10)
           .items_center()
           .justify_between()
+          .when(props()?.tabbed, (el) => el.justify_end())
           .text_size(11.5)
           .text_color(t.dim)
-          .when(!collapsed, (el) => el.child('Spaces'))
+          .when(!collapsed && !props()?.tabbed, (el) => el.child('Spaces'))
           .child(
             h_flex()
               .gap(collapsed ? 0 : 2)

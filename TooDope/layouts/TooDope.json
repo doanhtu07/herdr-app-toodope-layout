@@ -23,29 +23,34 @@
         },
         {
           "id": "sidebar-lists",
-          "type": "column",
+          "type": "stack",
+          "active": "spaces",
+          "header": {
+            "content": {
+              "mod": "toodope-sidebar-tabs"
+            },
+            "height": 38
+          },
           "children": [
             {
               "id": "spaces",
               "type": "block",
               "content": {
-                "mod": "toodope-spaces"
-              },
-              "size": {
-                "weight": 1
-              },
-              "min": 90
+                "mod": "toodope-spaces",
+                "props": {
+                  "tabbed": true
+                }
+              }
             },
             {
               "id": "agents",
               "type": "block",
               "content": {
-                "mod": "agents"
-              },
-              "size": {
-                "weight": 1
-              },
-              "min": 90
+                "mod": "toodope-agents",
+                "props": {
+                  "tabbed": true
+                }
+              }
             }
           ]
         },

@@ -7,6 +7,9 @@ TooDope layout for Herdr App.
 ## Features
 
 - **Spaces panel:**
+  - Full-height Spaces and Agents views, switched with centered tabs at the top of the sidebar
+  - A consistent second action row: Spaces navigation/actions or Agents sorting
+  - Agent count badge; the Agents view retains Herdr's status, grouping, pinning, and sub-agent controls
   - Back/Forward navigation and a recent-spaces picker (clock
     button or Cmd+Shift+J on macOS; Ctrl+Shift+J on Windows/Linux)
   - Active-terminal count for space
