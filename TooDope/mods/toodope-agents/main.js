@@ -17,7 +17,6 @@ import {
   openOverlay,
   closeOverlay,
   props,
-  window,
   layout,
 } from 'herdr'
 
@@ -32,22 +31,6 @@ function find(node, id) {
 
 // The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
 const narrow = () => (find(layout(), 'sidebar')?.size?.px ?? Infinity) < 160
-
-// To the rail (on macOS wide enough for the traffic lights), or back to the width it had.
-function toggleSidebar() {
-  const width = find(layout(), 'sidebar')?.size?.px
-  if (!narrow()) setShared('sidebar.width', width)
-  // Mods edited before the rail went by width still read the flag.
-  setShared('sidebar.collapsed', !narrow())
-  run('layout.resize', {
-    id: 'sidebar',
-    px: narrow()
-      ? (shared('sidebar.width') ?? 268)
-      : window()?.platform === 'macos'
-        ? 76
-        : 44,
-  })
-}
 
 const clean = (s) => (s ?? '').replace(/^[^\p{L}\p{N}]+/u, '').trim()
 
@@ -506,15 +489,13 @@ export default class Agents extends View {
           .px(8)
           .flex_none()
           .items_center()
+          .justify_center()
           .gap(4)
           .hover((s) => s.bg(t.hover))
           .on_click(() => run('pane.focus', { pane: a.pane }))
           .child(
             div()
-              .flex_1()
-              .min_w(0)
               .whitespace_nowrap()
-              .text_right()
               .text_color(t.muted)
               .child(String(i + 1)),
           )
@@ -762,23 +743,6 @@ export default class Agents extends View {
           .overflow_y_scrollbar()
           .mode('always')
           .children(rows),
-      )
-      .when(collapsed, (el) =>
-        el.child(
-          h_flex()
-            .h(28)
-            .items_center()
-            .justify_center()
-            .child(
-              div()
-                .id('collapse')
-                .text_size(13)
-                .text_color(t.dim)
-                .hover((s) => s.text_color(t.foreground))
-                .on_click(toggleSidebar)
-                .child('»'),
-            ),
-        ),
       )
   }
 }
