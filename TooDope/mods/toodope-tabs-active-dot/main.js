@@ -464,10 +464,6 @@ export default class Tabs extends View {
       .on_hover((hovered, cx) => {
         if (!hovered) this.cancelTabDrag(cx)
       })
-      .on_scroll_wheel((e) => {
-        if (Math.abs(e.delta.y) >= 1)
-          run(e.delta.y > 0 ? 'tab.prev' : 'tab.next')
-      })
       .child(
         h_flex()
           .id('tab-scroll')
