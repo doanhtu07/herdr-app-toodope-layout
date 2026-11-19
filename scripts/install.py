@@ -18,6 +18,9 @@ SHORTCUT_ACTION = "toodope-workspace-status.recent"
 LEGACY_SHORTCUT_ACTION = "toodope-spaces.recent"
 SHORTCUT_SECTION = "layout:TooDope"
 SHORTCUT_CONTEXTS = ("global", "terminal", SHORTCUT_SECTION)
+NEW_SPACE_ACTION = "toodope-workspace-status.new-space"
+NEW_SPACE_KEY = "cmd-n"
+NEW_SPACE_DEFAULT = "space.new"
 
 
 def shortcut_for_platform(platform: str | None = None) -> tuple[str, str]:
@@ -26,6 +29,11 @@ def shortcut_for_platform(platform: str | None = None) -> tuple[str, str]:
     if platform == "darwin":
         return "cmd-shift-j", "Cmd+Shift+J"
     return "ctrl-shift-j", "Ctrl+Shift+J"
+
+
+def new_space_label(platform: str | None = None) -> str:
+    """The friendly name of the New space key on this OS."""
+    return "Cmd+N" if (platform or sys.platform) == "darwin" else "Ctrl+N"
 
 
 def config_candidates() -> list[Path]:
@@ -102,66 +110,30 @@ def validate_sources() -> tuple[tuple[str, ...], tuple[str, ...]]:
     return layout_names, mod_names
 
 
-def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool]:
-    """Add the recent-spaces shortcut without replacing existing bindings."""
-    path = config / "keys.json"
-    key, label = shortcut_for_platform(platform)
+def read_keys(path: Path) -> tuple[dict | None, str | None]:
+    """Read keys.json, returning (bindings, problem)."""
     try:
         contents = path.read_text(encoding="utf-8-sig")
     except FileNotFoundError:
         if path.is_symlink():
-            return (f"Warning: left dangling symlink {path} unchanged.", True)
-        contents = None
+            return None, f"left dangling symlink {path} unchanged."
+        return {}, None
     except (OSError, UnicodeError) as exc:
-        return (
-            f"Warning: left {path} unchanged ({exc}); add {label}: "
-            f"{SHORTCUT_ACTION} under {SHORTCUT_SECTION!r} in keys.json manually.",
-            True,
-        )
+        return None, f"left {path} unchanged ({exc})."
 
-    if contents is None:
-        keys = {}
-    else:
-        try:
-            keys = json.loads(contents)
-        except json.JSONDecodeError as exc:
-            return (
-                f"Warning: left {path} unchanged ({exc}); add {label}: "
-                f"{SHORTCUT_ACTION} under {SHORTCUT_SECTION!r} in keys.json manually.",
-                True,
-            )
+    try:
+        keys = json.loads(contents)
+    except json.JSONDecodeError as exc:
+        return None, f"left {path} unchanged ({exc})."
 
     if not isinstance(keys, dict):
-        return (f"Warning: left {path} unchanged; expected a JSON object.", True)
+        return None, f"left {path} unchanged; expected a JSON object."
 
-    for section_name in SHORTCUT_CONTEXTS:
-        bindings = keys.get(section_name, {})
-        if not isinstance(bindings, dict):
-            return (
-                f"Warning: left {path} unchanged; {section_name!r} must be an object.",
-                True,
-            )
-        if key in bindings and bindings[key] != SHORTCUT_ACTION:
-            if (
-                section_name == SHORTCUT_SECTION
-                and bindings[key] == LEGACY_SHORTCUT_ACTION
-            ):
-                continue
+    return keys, None
 
-            existing = bindings[key]
 
-            return (
-                f"Warning: {label} is already bound to {existing!r} in "
-                f"{section_name!r}; left {path} unchanged.",
-                True,
-            )
-
-    layout_bindings = keys.setdefault(SHORTCUT_SECTION, {})
-    if layout_bindings.get(key) == SHORTCUT_ACTION:
-        return (f"{label} already opens recent spaces in TooDope.", False)
-
-    migrated = layout_bindings.get(key) == LEGACY_SHORTCUT_ACTION
-    layout_bindings[key] = SHORTCUT_ACTION
+def write_keys(path: Path, keys: dict) -> str | None:
+    """Replace keys.json atomically, following a symlink. Returns an error text."""
     write_path = path
     temporary_path: Path | None = None
     try:
@@ -191,7 +163,50 @@ def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool
                 temporary_path.unlink(missing_ok=True)
             except OSError:
                 pass
-        return (f"Warning: couldn't add {label} to {path}: {exc}.", True)
+        return str(exc)
+    return None
+
+
+def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool]:
+    """Add the recent-spaces shortcut without replacing existing bindings."""
+    path = config / "keys.json"
+    key, label = shortcut_for_platform(platform)
+    manual = f"add {label}: {SHORTCUT_ACTION} under {SHORTCUT_SECTION!r} in keys.json manually."
+    keys, problem = read_keys(path)
+    if problem:
+        return (f"Warning: {problem} {manual}", True)
+
+    for section_name in SHORTCUT_CONTEXTS:
+        bindings = keys.get(section_name, {})
+        if not isinstance(bindings, dict):
+            return (
+                f"Warning: left {path} unchanged; {section_name!r} must be an object.",
+                True,
+            )
+        if key in bindings and bindings[key] != SHORTCUT_ACTION:
+            if (
+                section_name == SHORTCUT_SECTION
+                and bindings[key] == LEGACY_SHORTCUT_ACTION
+            ):
+                continue
+
+            existing = bindings[key]
+
+            return (
+                f"Warning: {label} is already bound to {existing!r} in "
+                f"{section_name!r}; left {path} unchanged.",
+                True,
+            )
+
+    layout_bindings = keys.setdefault(SHORTCUT_SECTION, {})
+    if layout_bindings.get(key) == SHORTCUT_ACTION:
+        return (f"{label} already opens recent spaces in TooDope.", False)
+
+    migrated = layout_bindings.get(key) == LEGACY_SHORTCUT_ACTION
+    layout_bindings[key] = SHORTCUT_ACTION
+    error = write_keys(path, keys)
+    if error:
+        return (f"Warning: couldn't add {label} to {path}: {error}.", True)
 
     if migrated:
         return (
@@ -199,6 +214,57 @@ def merge_shortcut(config: Path, platform: str | None = None) -> tuple[str, bool
             False,
         )
     return (f"Added {label} to open recent spaces in the TooDope layout.", False)
+
+
+def merge_new_space(config: Path, platform: str | None = None) -> tuple[str, bool]:
+    """Point the New space key at TooDope's insert-after-selected command."""
+    path = config / "keys.json"
+    label = new_space_label(platform)
+    manual = (
+        f"add {NEW_SPACE_KEY}: {NEW_SPACE_ACTION} under {SHORTCUT_SECTION!r} "
+        "in keys.json manually."
+    )
+    keys, problem = read_keys(path)
+    if problem:
+        return (f"Warning: {problem} {manual}", True)
+
+    # A layout binding wins over these, but a different binding there means the
+    # person already chose what this key does; leave it alone.
+    for section_name in ("global", "terminal"):
+        bindings = keys.get(section_name, {})
+        if not isinstance(bindings, dict):
+            return (
+                f"Warning: left {path} unchanged; {section_name!r} must be an object.",
+                True,
+            )
+        bound = bindings.get(NEW_SPACE_KEY, NEW_SPACE_DEFAULT)
+        if bound != NEW_SPACE_DEFAULT:
+            return (
+                f"Warning: {label} is already bound to {bound!r} in "
+                f"{section_name!r}; left {path} unchanged.",
+                True,
+            )
+
+    layout_bindings = keys.setdefault(SHORTCUT_SECTION, {})
+    current = layout_bindings.get(NEW_SPACE_KEY, NEW_SPACE_DEFAULT)
+    if current == NEW_SPACE_ACTION:
+        return (f"{label} already adds a space next to the selected one.", False)
+    if current != NEW_SPACE_DEFAULT:
+        return (
+            f"Warning: {label} is already bound to {current!r} in "
+            f"{SHORTCUT_SECTION!r}; left {path} unchanged.",
+            True,
+        )
+
+    layout_bindings[NEW_SPACE_KEY] = NEW_SPACE_ACTION
+    error = write_keys(path, keys)
+    if error:
+        return (f"Warning: couldn't add {label} to {path}: {error}.", True)
+
+    return (
+        f"Added {label}: adds a space next to the selected one in the TooDope layout.",
+        False,
+    )
 
 
 def install(config: Path) -> int:
@@ -220,6 +286,8 @@ def install(config: Path) -> int:
         shutil.copytree(SOURCE / "mods" / name, mods / name)
 
     message, warning = merge_shortcut(config)
+    print(message, file=sys.stderr if warning else sys.stdout)
+    message, warning = merge_new_space(config)
     print(message, file=sys.stderr if warning else sys.stdout)
     return len(mod_names)
 

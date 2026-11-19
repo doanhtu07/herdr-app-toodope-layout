@@ -1278,7 +1278,7 @@ export default class Spaces extends View {
                       .text_color(t.foreground),
                   )
                   .on_mouse_down('left', stop)
-                  .on_click(() => run('space.new'))
+                  .on_click(() => run('toodope-workspace-status.new-space'))
                   .tooltip('New space')
                   .child(svg('mods/workspace-chrome/plus.svg').size(14)),
               ]),

@@ -141,14 +141,54 @@ export default class WorkspaceStatus extends View {
   init(_props, cx) {
     this.foregroundActive = {}
     this.foregroundRefreshing = false
+    this.claimed = new Set() // new spaces this mod has already placed
     this.refreshForeground(cx)
     cx.timer.every(5000, (cx) => this.refreshForeground(cx))
 
-    cx.spawn(async () => {
+    cx.spawn(async (cx) => {
       for (;;) {
         const command = await nextCommand()
         if (command === 'recent') this.openHistory()
+        else if (command === 'new-space') this.newSpace(cx)
       }
+    })
+  }
+
+  // Herdr appends a new space; put this one right after the space it was made
+  // from, so adding a space does not send it to the far end of the list.
+  newSpace(cx) {
+    const list = spaces()
+    const from = list.find((space) => space.active)
+    const anchor = from?.id ?? null
+    const anchorIndex = from?.index ?? list.length
+    const machine = from?.machine ?? null
+    const before = new Set(list.map((space) => space.id))
+
+    run('space.new')
+
+    cx.spawn(async (cx) => {
+      let created = null
+      for (let i = 0; i < 80 && !created; i++) {
+        await cx.sleep(25)
+        created =
+          spaces().find(
+            (space) =>
+              !before.has(space.id) &&
+              !this.claimed.has(space.id) &&
+              (space.machine ?? null) === machine,
+          ) ?? null
+      }
+      if (!created) return
+
+      this.claimed.add(created.id)
+      const live = spaces()
+      const ids = new Set(live.map((space) => space.id))
+      for (const id of this.claimed) if (!ids.has(id)) this.claimed.delete(id)
+
+      const index =
+        (live.find((space) => space.id === anchor)?.index ?? anchorIndex) + 1
+      run('space.move', { id: created.id, index })
+      cx.notify()
     })
   }
 
