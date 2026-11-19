@@ -9,6 +9,7 @@ import {
   spaces,
   machines,
   panes,
+  agents,
   run,
   openOverlay,
   exec,
@@ -601,7 +602,7 @@ export default class Spaces extends View {
   }
 
   // Spaces in order, each worktree space moved under its main checkout's.
-  ordered(activeCounts) {
+  ordered(activeCounts, agentCounts) {
     const sp = spaces(),
       ps = panes()
 
@@ -617,6 +618,7 @@ export default class Spaces extends View {
       i,
       g: this.git[where(w, ps)] ?? null,
       active: activeCounts.get(w.id) ?? 0,
+      agentCount: agentCounts.get(w.id) ?? 0,
     }))
 
     const mains = new Set(
@@ -661,8 +663,8 @@ export default class Spaces extends View {
   }
 
   // The rows, under a header per machine once one isn't this computer.
-  grouped(t, collapsed, activeCounts) {
-    const rows = this.ordered(activeCounts)
+  grouped(t, collapsed, activeCounts, agentCounts) {
+    const rows = this.ordered(activeCounts, agentCounts)
     const draw = (r) => (collapsed ? this.compact(r, t) : this.row(r, t))
 
     const remote = [
@@ -831,7 +833,7 @@ export default class Spaces extends View {
     })
   }
 
-  row({ w, i, g, tree, active }, t) {
+  row({ w, i, g, tree, active, agentCount }, t) {
     const on = w.active
     const fromIndex =
       this.pressed === null
@@ -957,17 +959,32 @@ export default class Spaces extends View {
               .pl(tree ? 44 : 27)
               .text_size(10.5)
               .text_color(t.muted)
-              .child(
-                h_flex()
-                  .flex_none()
-                  .gap(3)
-                  .items_center()
-                  .text_color(active > 0 ? t.ansi2 : t.muted)
-                  .tooltip(
-                    `${active} active terminal${active === 1 ? '' : 's'}; idle shells are excluded`,
-                  )
-                  .child(svg('mods/workspace-chrome/terminal.svg').size(12))
-                  .child(String(active)),
+              .when(active > 0, (el) =>
+                el.child(
+                  h_flex()
+                    .flex_none()
+                    .gap(3)
+                    .items_center()
+                    .text_color(t.ansi2)
+                    .tooltip(
+                      `${active} active terminal${active === 1 ? '' : 's'}; idle shells are excluded`,
+                    )
+                    .child(svg('mods/workspace-chrome/terminal.svg').size(12))
+                    .child(String(active)),
+                ),
+              )
+              .when(agentCount > 0, (el) =>
+                el.child(
+                  h_flex()
+                    .flex_none()
+                    .gap(3)
+                    .items_center()
+                    .tooltip(
+                      `${agentCount} agent${agentCount === 1 ? '' : 's'} in this space`,
+                    )
+                    .child(svg('mods/toodope-spaces/agent.svg').size(12))
+                    .child(String(agentCount)),
+                ),
               )
               .when(g?.changed > 0, (el) =>
                 el.child(
@@ -1098,6 +1115,11 @@ export default class Spaces extends View {
     const activeCounts = new Map(
       Object.entries(shared('space.activeTerminalCounts') ?? {}),
     )
+    const agentCounts = new Map(sp.map((space) => [space.id, 0]))
+    for (const agent of agents()) {
+      if (agentCounts.has(agent.space))
+        agentCounts.set(agent.space, agentCounts.get(agent.space) + 1)
+    }
 
     const changeCounts = {}
     for (const s of sp) {
@@ -1204,7 +1226,7 @@ export default class Spaces extends View {
             this.pressed = null
             cx.notify()
           })
-          .children(this.grouped(t, collapsed, activeCounts)),
+          .children(this.grouped(t, collapsed, activeCounts, agentCounts)),
       )
   }
 }
