@@ -36,7 +36,9 @@ export default class PaneHeader extends View {
       .p(3)
       .rounded(4)
       .text_color(t.dim)
-      .hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .hover((s) =>
+        s.bg(t.input).border(1).border_color(t.accent).text_color(t.foreground),
+      )
       .on_click((_e, cx) => {
         cx.stop_propagation()
         run(command, args)

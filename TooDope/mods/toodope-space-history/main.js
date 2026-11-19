@@ -160,7 +160,13 @@ export default class SpaceHistory extends View {
                   .justify_center()
                   .rounded(7)
                   .text_color(t.dim)
-                  .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                  .hover((s) =>
+                    s
+                      .bg(t.input)
+                      .border(1)
+                      .border_color(t.accent)
+                      .text_color(t.foreground),
+                  )
                   .on_click(() => closeOverlay(props()?.overlay))
                   .child(svg('mods/workspace-chrome/x.svg').size(13)),
               ),
@@ -202,7 +208,13 @@ export default class SpaceHistory extends View {
                           .border_1()
                           .border_color(selected ? t.accent : t.border)
                           .bg(selected ? t.selected : t.background)
-                          .hover((s) => s.bg(t.hover))
+                          .hover((s) =>
+                            s
+                              .bg(t.input)
+                              .border(1)
+                              .border_color(t.accent)
+                              .text_color(t.foreground),
+                          )
                           .child(
                             div()
                               .size(27)

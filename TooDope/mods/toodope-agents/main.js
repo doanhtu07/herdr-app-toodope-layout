@@ -183,7 +183,13 @@ export default class Agents extends View {
             .rounded(7)
             .items_center()
             .text_color(t.foreground)
-            .hover((el) => el.bg(t.hover))
+            .hover((el) =>
+              el
+                .bg(t.input)
+                .border(1)
+                .border_color(t.accent)
+                .text_color(t.foreground),
+            )
             .on_click(() => {
               setShared('agents.sort', s.id)
               closeOverlay(props().overlay)
@@ -217,7 +223,9 @@ export default class Agents extends View {
       .justify_center()
       .rounded(6)
       .text_color(t.dim)
-      .hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .hover((s) =>
+        s.bg(t.input).border(1).border_color(t.accent).text_color(t.foreground),
+      )
       .on_click(() =>
         openOverlay({
           mod: 'agents',
@@ -263,7 +271,9 @@ export default class Agents extends View {
       .items_center()
       .text_size(12.5)
       .when(on, (el) => el.bg(t.raised))
-      .hover((s) => s.bg(t.hover))
+      .hover((s) =>
+        s.bg(t.input).border(1).border_color(t.accent).text_color(t.foreground),
+      )
       .on_click(() =>
         this.listed.has(k.address)
           ? run('pane.focus', { terminal: k.address })
@@ -424,7 +434,13 @@ export default class Agents extends View {
         .text_size(11)
         .text_color(open ? t.dim : (t[top] ?? t.dim))
         .cursor_pointer()
-        .hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        )
         .on_click((_e, cx) => {
           cx.stop_propagation()
           open ? this.folded.add(a.address) : this.folded.delete(a.address)
@@ -491,7 +507,19 @@ export default class Agents extends View {
           .items_center()
           .justify_center()
           .gap(4)
-          .hover((s) => s.bg(t.hover))
+          .rounded(6)
+          .when(a.focused, (el) =>
+            el.bg(t.selected).border(1).border_color(t.accent),
+          )
+          .when(!a.focused, (el) =>
+            el.hover((s) =>
+              s
+                .bg(t.input)
+                .border(1)
+                .border_color(t.accent)
+                .text_color(t.foreground),
+            ),
+          )
           .on_click(() => run('pane.focus', { pane: a.pane }))
           .child(
             div()
@@ -518,7 +546,13 @@ export default class Agents extends View {
         .rounded(4)
         .text_color(t.dim)
         .cursor_pointer()
-        .hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        )
         .tooltip(isPinned ? 'Unpin' : 'Pin to the top')
         .on_click((_e, cx) => {
           cx.stop_propagation()
@@ -547,9 +581,19 @@ export default class Agents extends View {
         .rounded(8)
         .items_center()
         .gap(9)
-        .when(a.focused, (el) => el.bg(t.selected))
+        .when(a.focused, (el) =>
+          el.bg(t.selected).border(1).border_color(t.accent),
+        )
         .cursor_pointer()
-        .hover((s) => s.bg(t.hover))
+        .when(!a.focused, (el) =>
+          el.hover((s) =>
+            s
+              .bg(t.input)
+              .border(1)
+              .border_color(t.accent)
+              .text_color(t.foreground),
+          ),
+        )
         .on_hover((on, cx) => {
           if (on) this.hovered = a.address
           else if (this.hovered === a.address) this.hovered = null
@@ -650,7 +694,14 @@ export default class Agents extends View {
         .text_size(11)
         .font_medium()
         .cursor_pointer()
-        .hover((s) => s.text_color(t.foreground))
+        .rounded(6)
+        .hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        )
         .on_click((_e, cx) => {
           open ? this.folded.add(g.id) : this.folded.delete(g.id)
           cx.notify()

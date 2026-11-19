@@ -712,12 +712,19 @@ export default class Spaces extends View {
         .h(26)
         .flex_none()
         .px(collapsed ? 2 : 8)
+        .rounded(7)
         .gap(7)
         .items_center()
         .text_size(11)
         .text_color(t.dim)
         .cursor_pointer()
-        .hover((s) => s.bg(t.hover))
+        .hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        )
         .on_click((_e, cx) => {
           folded ? this.folded.delete(m) : this.folded.add(m)
           localStorage.setItem(
@@ -762,7 +769,14 @@ export default class Spaces extends View {
                     div()
                       .id(`machine-connect-${m}`)
                       .text_color(repair?.error ? t.blocked : t.muted)
-                      .hover((s) => s.text_color(t.foreground))
+                      .rounded(4)
+                      .hover((s) =>
+                        s
+                          .bg(t.input)
+                          .border(1)
+                          .border_color(t.accent)
+                          .text_color(t.foreground),
+                      )
                       .tooltip(
                         repair?.error ||
                           'This machine was rebuilt or replaced. Click to connect to the new one.',
@@ -782,7 +796,13 @@ export default class Spaces extends View {
                   .flex_none()
                   .px(4)
                   .rounded(4)
-                  .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                  .hover((s) =>
+                    s
+                      .bg(t.input)
+                      .border(1)
+                      .border_color(t.accent)
+                      .text_color(t.foreground),
+                  )
                   .on_click((_e, cx) => {
                     cx.stop_propagation()
                     run('space.new', { machine: m ?? '' })
@@ -816,7 +836,13 @@ export default class Spaces extends View {
         .rounded(7)
         .text_size(12)
         .text_color(t.dim)
-        .hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        )
         .on_click(() => run('space.new', { machine: m ?? '' }))
         .child(svg('mods/workspace-chrome/plus.svg').size(12))
         .when(!collapsed, (el) => el.child('New space there'))
@@ -855,8 +881,16 @@ export default class Spaces extends View {
       .gap(1)
       .rounded(8)
 
-      .when(on, (el) => el.bg(t.selected))
-      .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
+      .when(on, (el) => el.bg(t.selected).border(1).border_color(t.accent))
+      .when(!on, (el) =>
+        el.hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        ),
+      )
 
       .when(this.pressed === w.id && this.over !== w.id, (el) =>
         el.opacity(0.5),
@@ -965,10 +999,10 @@ export default class Spaces extends View {
                     .flex_none()
                     .gap(3)
                     .items_center()
-                    .text_color(t.ansi2)
                     .tooltip(
                       `${active} active terminal${active === 1 ? '' : 's'}; idle shells are excluded`,
                     )
+                    .text_color(t.ansi2)
                     .child(svg('mods/workspace-chrome/terminal.svg').size(12))
                     .child(String(active)),
                 ),
@@ -979,6 +1013,7 @@ export default class Spaces extends View {
                     .flex_none()
                     .gap(3)
                     .items_center()
+                    .text_color(t.ansi5)
                     .tooltip(
                       `${agentCount} agent${agentCount === 1 ? '' : 's'} in this space`,
                     )
@@ -1013,7 +1048,13 @@ export default class Spaces extends View {
                     .rounded(5)
                     .cursor_pointer()
                     .text_color(t.dim)
-                    .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                    .hover((s) =>
+                      s
+                        .bg(t.input)
+                        .border(1)
+                        .border_color(t.accent)
+                        .text_color(t.foreground),
+                    )
                     .tooltip('Copy absolute path')
                     .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
                     .on_click((_e, cx) => {
@@ -1035,7 +1076,13 @@ export default class Spaces extends View {
                     .rounded(5)
                     .cursor_pointer()
                     .text_color(t.dim)
-                    .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                    .hover((s) =>
+                      s
+                        .bg(t.input)
+                        .border(1)
+                        .border_color(t.accent)
+                        .text_color(t.foreground),
+                    )
                     .tooltip('Open project in VS Code')
                     .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
                     .on_click((_e, cx) => {
@@ -1055,7 +1102,13 @@ export default class Spaces extends View {
                     .justify_center()
                     .rounded(5)
                     .text_color(t.dim)
-                    .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                    .hover((s) =>
+                      s
+                        .bg(t.input)
+                        .border(1)
+                        .border_color(t.accent)
+                        .text_color(t.foreground),
+                    )
                     .tooltip(metadataHint(active, g))
                     .child(svg('mods/toodope-spaces/info.svg').size(13)),
                 ),
@@ -1071,8 +1124,13 @@ export default class Spaces extends View {
       .flex_none()
       .justify_center()
       .gap(4)
-      .when(w.active, (el) => el.bg(t.raised))
-      .hover((s) => s.bg(t.hover))
+      .when(w.active, (el) =>
+        el.bg(t.selected).border(1).border_color(t.accent),
+      )
+      .rounded(6)
+      .hover((s) =>
+        s.bg(t.input).border(1).border_color(t.accent).text_color(t.foreground),
+      )
       .on_click(() => run('space.select', { id: w.id }))
       .child(
         div()
@@ -1098,7 +1156,13 @@ export default class Spaces extends View {
         .rounded(6)
         .text_color(t.dim)
         .when(enabled, (el) =>
-          el.hover((s) => s.bg(t.hover).text_color(t.foreground)),
+          el.hover((s) =>
+            s
+              .bg(t.input)
+              .border(1)
+              .border_color(t.accent)
+              .text_color(t.foreground),
+          ),
         )
         .when(!enabled, (el) => el.opacity(0.38))
         .tooltip(label)
@@ -1206,7 +1270,13 @@ export default class Spaces extends View {
                   .items_center()
                   .justify_center()
                   .rounded(6)
-                  .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                  .hover((s) =>
+                    s
+                      .bg(t.input)
+                      .border(1)
+                      .border_color(t.accent)
+                      .text_color(t.foreground),
+                  )
                   .on_mouse_down('left', stop)
                   .on_click(() => run('space.new'))
                   .tooltip('New space')

@@ -261,14 +261,21 @@ export default class Tabs extends View {
     const button = (id, label, action, dropLast = false) =>
       div()
         .id(id)
-        .size(26)
+        .size(28)
+        .py(2)
         .flex_none()
         .flex()
         .items_center()
         .justify_center()
         .rounded(6)
         .text_color(t.dim)
-        .hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .hover((s) =>
+          s
+            .bg(t.accent)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.accent_foreground),
+        )
         .on_mouse_down('left', stop)
         .on_mouse_move((event, cx) => {
           if (dropLast && shown.length)
@@ -314,7 +321,8 @@ export default class Tabs extends View {
       return h_flex()
         .id(`tab-${c.id}`)
         .relative()
-        .h(29)
+        .h(32)
+        .py(2)
         .px(10)
         .gap(7)
         .rounded(7)
@@ -322,10 +330,18 @@ export default class Tabs extends View {
         .flex_none()
         .text_size(12.8)
         .border(1)
-        .border_color(c.active ? t.border : t.chrome)
-        .bg(c.active ? t.raised : t.chrome)
+        .border_color(c.active ? t.accent : t.chrome)
+        .bg(c.active ? t.selected : t.chrome)
         .text_color(c.active ? t.foreground : t.muted)
-        .hover((s) => s.bg(t.hover))
+        .when(!c.active && !this.drag?.active, (el) =>
+          el.hover((s) =>
+            s
+              .bg(t.input)
+              .border(1)
+              .border_color(t.accent)
+              .text_color(t.foreground),
+          ),
+        )
         .when(this.drag?.active && this.drag.id === c.id, (el) =>
           el.opacity(0.35),
         )
@@ -425,7 +441,9 @@ export default class Tabs extends View {
 
       return h_flex()
         .id(`panel-${id}`)
-        .h(26)
+        .relative()
+        .h(29)
+        .py(2)
         .px(8)
         .gap(5)
         .flex_none()
@@ -434,7 +452,16 @@ export default class Tabs extends View {
         .text_size(12)
         .bg(on ? t.selected : t.chrome)
         .text_color(on ? t.foreground : t.muted)
-        .hover((s) => s.bg(t.hover))
+        .when(on, (el) => el.border(1).border_color(t.accent))
+        .when(!on && !this.drag?.active, (el) =>
+          el.hover((s) =>
+            s
+              .bg(t.input)
+              .border(1)
+              .border_color(t.accent)
+              .text_color(t.foreground),
+          ),
+        )
         .on_mouse_down('left', stop)
         .on_mouse_up('left', (_e, cx) => this.cancelTabDrag(cx))
         .on_click(() => {

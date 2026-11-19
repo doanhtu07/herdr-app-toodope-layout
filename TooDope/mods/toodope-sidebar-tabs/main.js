@@ -37,7 +37,8 @@ export default class SidebarTabs extends View {
     const tab = (id, label, shortLabel, count = null) =>
       h_flex()
         .id(`sidebar-tab-${id}`)
-        .h(24)
+        .h(28)
+        .py(2)
         .flex_none()
         .px(collapsed ? 2 : 10)
         .gap(collapsed ? 0 : 5)
@@ -48,9 +49,17 @@ export default class SidebarTabs extends View {
         .text_size(11.5)
         .font_medium()
         .text_color(active === id ? t.foreground : t.dim)
-        .when(active === id, (el) => el.bg(t.selected))
+        .when(active === id, (el) =>
+          el.bg(t.selected).border(1).border_color(t.accent),
+        )
         .when(active !== id, (el) =>
-          el.hover((s) => s.bg(t.hover).text_color(t.foreground)),
+          el.hover((s) =>
+            s
+              .bg(t.input)
+              .border(1)
+              .border_color(t.accent)
+              .text_color(t.foreground),
+          ),
         )
         .on_click((_e, cx) => {
           cx.stop_propagation()
@@ -65,9 +74,10 @@ export default class SidebarTabs extends View {
               .py(1)
               .rounded(4)
               .border(1)
-              .border_color(t.border)
+              .border_color(t.ansi5)
               .text_size(10)
-              .text_color(t.muted)
+              .font_medium()
+              .text_color(t.ansi5)
               .child(String(count)),
           ),
         )
@@ -105,7 +115,13 @@ export default class SidebarTabs extends View {
             .cursor_pointer()
             .text_size(13)
             .text_color(t.dim)
-            .hover((s) => s.bg(t.hover).text_color(t.foreground))
+            .hover((s) =>
+              s
+                .bg(t.input)
+                .border(1)
+                .border_color(t.accent)
+                .text_color(t.foreground),
+            )
             .tooltip('Expand sidebar')
             .on_click((_e, cx) => {
               cx.stop_propagation()

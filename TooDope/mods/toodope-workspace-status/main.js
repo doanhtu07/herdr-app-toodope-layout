@@ -444,10 +444,19 @@ export default class WorkspaceStatus extends View {
           .child(
             h_flex()
               .id('status-active-terminals')
+              .h(22)
+              .px(6)
               .gap(6)
               .items_center()
               .cursor_pointer()
-              .hover((s) => s.text_color(t.foreground))
+              .rounded(6)
+              .hover((s) =>
+                s
+                  .bg(t.input)
+                  .border(1)
+                  .border_color(t.accent)
+                  .text_color(t.foreground),
+              )
               .tooltip(
                 'View active terminals by space; idle shells and non-working agents are excluded',
               )
@@ -497,7 +506,13 @@ export default class WorkspaceStatus extends View {
                 .rounded(5)
                 .cursor_pointer()
                 .text_color(t.dim)
-                .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                .hover((s) =>
+                  s
+                    .bg(t.input)
+                    .border(1)
+                    .border_color(t.accent)
+                    .text_color(t.foreground),
+                )
                 .tooltip('Copy absolute path')
                 .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
                 .on_click((_e, cx) => {
@@ -518,7 +533,13 @@ export default class WorkspaceStatus extends View {
                   .rounded(5)
                   .cursor_pointer()
                   .text_color(t.dim)
-                  .hover((s) => s.bg(t.hover).text_color(t.foreground))
+                  .hover((s) =>
+                    s
+                      .bg(t.input)
+                      .border(1)
+                      .border_color(t.accent)
+                      .text_color(t.foreground),
+                  )
                   .tooltip('Open project in VS Code')
                   .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
                   .on_click((_e, cx) => {
