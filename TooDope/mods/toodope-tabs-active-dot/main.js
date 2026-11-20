@@ -12,8 +12,8 @@ import {
   settings,
 } from 'herdr'
 
-const TAB_DRAG_DELAY = 400
-const TAB_DRAG_DISTANCE = 12
+const TAB_DRAG_DELAY = 200
+const TAB_DRAG_DISTANCE = 6
 const TAB_GAP = 6
 
 function tabMoveIndex(tabs, sourceID, targetID, after) {

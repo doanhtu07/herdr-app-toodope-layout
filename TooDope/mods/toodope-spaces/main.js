@@ -27,6 +27,8 @@ import {
 
 const HISTORY_KEY = 'space.navigation'
 const HISTORY_LIMIT = 40
+const SPACE_DRAG_DELAY = 200
+const SPACE_DRAG_DISTANCE = 6
 
 function find(node, id) {
   if (node?.id === id) return node
@@ -70,6 +72,34 @@ async function launchCode(args, options) {
 
 const isHome = (path) =>
   path?.replace(/\/+$/, '') === home().replace(/\/+$/, '')
+
+// Where a drag would put its space: the same rule the tab bar uses, so the
+// drop line and the move agree on which side of the middle the pointer is on.
+function spaceMoveIndex(order, sourceID, targetID, after) {
+  const from = order.findIndex((s) => s.id === sourceID)
+  const target = order.findIndex((s) => s.id === targetID)
+  if (from < 0 || target < 0) return null
+
+  const boundary = target + (after ? 1 : 0)
+  const destination = boundary - (from < boundary ? 1 : 0)
+  return destination === from ? null : destination + 1
+}
+
+function afterMiddleY(event) {
+  const y =
+    event.local_position?.y ?? (event.position?.y ?? 0) - (event.bounds?.y ?? 0)
+  return y > (event.bounds?.height ?? Infinity) / 2
+}
+
+function contains(bounds, point) {
+  return (
+    bounds &&
+    point.x >= bounds.x &&
+    point.x <= bounds.x + bounds.width &&
+    point.y >= bounds.y &&
+    point.y <= bounds.y + bounds.height
+  )
+}
 
 function readHistory() {
   try {
@@ -156,8 +186,7 @@ export default class Spaces extends View {
     // worktree appears under its repo instead of jumping there.
     this.shown = new Set(spaces().map((s) => s.id))
     this.born = {}
-    this.pressed = null
-    this.over = null
+    this.drag = null
 
     this.history = readHistory()
     // Share navigation with the status bar, which stays visible when this
@@ -859,12 +888,103 @@ export default class Spaces extends View {
     })
   }
 
-  row({ w, i, g, tree, active, agentCount }, t) {
+  beginSpaceDrag(space, event) {
+    const point = event.position ?? { x: 0, y: 0 }
+    this.drag = {
+      id: space.id,
+      start: point,
+      point,
+      pressedAt: Date.now(),
+      active: false,
+      target: null,
+    }
+  }
+
+  spaceDragReady(drag, point) {
+    const distance = Math.hypot(point.x - drag.start.x, point.y - drag.start.y)
+    return (
+      Date.now() - drag.pressedAt >= SPACE_DRAG_DELAY &&
+      distance >= SPACE_DRAG_DISTANCE
+    )
+  }
+
+  hoverSpace(space, event, cx) {
+    const drag = this.drag
+    if (!drag) return
+
+    const point = event.position ?? drag.point
+    drag.point = point
+    drag.active ||= this.spaceDragReady(drag, point)
+    if (!drag.active) return
+
+    // Only spaces on the dragged space's machine share an order.
+    const source = spaces().find((s) => s.id === drag.id)
+    const same = source && (source.machine ?? null) === (space.machine ?? null)
+    const target = same
+      ? {
+          id: space.id,
+          after: afterMiddleY(event),
+          bounds: event.bounds,
+        }
+      : null
+
+    if (
+      target?.id !== drag.target?.id ||
+      target?.after !== drag.target?.after
+    ) {
+      drag.target = target
+      cx.notify()
+    } else drag.target = target
+  }
+
+  moveSpacePointer(event, cx) {
+    const drag = this.drag
+    if (!drag?.active || !drag.target?.bounds) return
+
+    const point = event.position ?? drag.point
+    drag.point = point
+    if (!contains(drag.target.bounds, point)) {
+      drag.target = null
+      cx.notify()
+    }
+  }
+
+  finishSpaceDrag(space, event, cx) {
+    const drag = this.drag
+    if (!drag) return
+    cx.stop_propagation()
+    this.hoverSpace(space, event, cx)
+    this.commitSpaceDrag(space.id, cx)
+  }
+
+  commitSpaceDrag(clickedID, cx) {
+    const drag = this.drag
+    this.drag = null
+    if (!drag) return
+
+    if (drag.active && drag.target && drag.target.id !== drag.id) {
+      const index = spaceMoveIndex(
+        spaces(),
+        drag.id,
+        drag.target.id,
+        drag.target.after,
+      )
+      if (index !== null) run('space.move', { id: drag.id, index })
+    } else if (!drag.active && drag.id === clickedID) {
+      run('space.select', { id: drag.id })
+    }
+
+    cx?.notify()
+  }
+
+  cancelSpaceDrag(cx) {
+    if (!this.drag) return
+    this.drag = null
+    cx?.notify()
+  }
+
+  row({ w, g, tree, active, agentCount }, t) {
     const on = w.active
-    const fromIndex =
-      this.pressed === null
-        ? -1
-        : spaces().findIndex((s) => s.id === this.pressed)
     const cwd = place(w, panes())
     const project = Boolean(cwd) && w.name !== '~' && !isHome(cwd)
     const colors = shared('space.colors') ?? {}
@@ -882,7 +1002,7 @@ export default class Spaces extends View {
       .rounded(8)
 
       .when(on, (el) => el.bg(t.selected).border(1).border_color(t.accent))
-      .when(!on, (el) =>
+      .when(!on && !this.drag?.active, (el) =>
         el.hover((s) =>
           s
             .bg(t.input)
@@ -892,50 +1012,30 @@ export default class Spaces extends View {
         ),
       )
 
-      .when(this.pressed === w.id && this.over !== w.id, (el) =>
-        el.opacity(0.5),
+      .when(this.drag?.active && this.drag.id === w.id, (el) =>
+        el.opacity(0.35),
       )
       .when(
-        this.pressed !== null && this.over === w.id && this.pressed !== w.id,
+        this.drag?.active &&
+          this.drag.target?.id === w.id &&
+          this.drag.id !== w.id,
         (el) =>
           el.child(
             div()
               .absolute()
-              .left(0)
-              .right(0)
+              .left(8)
+              .right(8)
               .h(2)
+              .rounded(1)
               .bg(t.accent)
-              .when(fromIndex < i, (line) => line.bottom(0))
-              .when(fromIndex > i, (line) => line.top(0)),
+              .when(this.drag.target.after, (line) => line.bottom(0))
+              .when(!this.drag.target.after, (line) => line.top(0)),
           ),
       )
 
-      .on_mouse_down('left', () => {
-        this.pressed = w.id
-        this.over = w.id
-      })
-      .on_mouse_move((_e, cx) => {
-        const source = spaces().find((s) => s.id === this.pressed)
-        const over =
-          source && (source.machine ?? null) === (w.machine ?? null)
-            ? w.id
-            : null
-        if (this.pressed !== null && this.over !== over) {
-          this.over = over
-          cx.notify()
-        }
-      })
-      .on_mouse_up('left', (_e, cx) => {
-        const from = this.pressed
-        const over = this.over
-        this.pressed = null
-        this.over = null
-        if (from !== null && over === w.id && from !== w.id) {
-          const index = spaces().findIndex((s) => s.id === w.id)
-          if (index !== -1) run('space.move', { id: from, index: index + 1 })
-        } else if (from === w.id) run('space.select', { id: w.id })
-        cx.notify()
-      })
+      .on_mouse_down('left', (event) => this.beginSpaceDrag(w, event))
+      .on_mouse_move((event, cx) => this.hoverSpace(w, event, cx))
+      .on_mouse_up('left', (event, cx) => this.finishSpaceDrag(w, event, cx))
       .on_mouse_down('right', () => this.menu(w))
 
       .child(
@@ -1128,8 +1228,14 @@ export default class Spaces extends View {
         el.bg(t.selected).border(1).border_color(t.accent),
       )
       .rounded(6)
-      .hover((s) =>
-        s.bg(t.input).border(1).border_color(t.accent).text_color(t.foreground),
+      .when(!this.drag?.active, (el) =>
+        el.hover((s) =>
+          s
+            .bg(t.input)
+            .border(1)
+            .border_color(t.accent)
+            .text_color(t.foreground),
+        ),
       )
       .on_click(() => run('space.select', { id: w.id }))
       .child(
@@ -1292,9 +1398,10 @@ export default class Spaces extends View {
           .pb(14)
           .overflow_y_scrollbar()
           .mode('always')
-          .on_mouse_up('left', (_e, cx) => {
-            this.pressed = null
-            cx.notify()
+          .on_mouse_move((event, cx) => this.moveSpacePointer(event, cx))
+          .on_mouse_up('left', (_e, cx) => this.commitSpaceDrag(null, cx))
+          .on_hover((hovered, cx) => {
+            if (!hovered) this.cancelSpaceDrag(cx)
           })
           .children(this.grouped(t, collapsed, activeCounts, agentCounts)),
       )
