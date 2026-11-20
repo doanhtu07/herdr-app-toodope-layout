@@ -1,4 +1,4 @@
-// Adapted from Herdr's shipped Agents mod; the tabbed layout moves its sort control below the tabs.
+// Adapted from Herdr's shipped Agents mod; it can render under sidebar tabs or as a full panel.
 // Agents in grouped or priority views; parents take their most urgent sub-agent's place.
 
 import { View, div, image, svg } from 'gpui-kit'
@@ -361,7 +361,7 @@ export default class Agents extends View {
   render(cx) {
     const t = theme()
     if (props()?.sortMenu) return this.sortMenu(t)
-    const collapsed = narrow()
+    const collapsed = props()?.panel ? false : narrow()
     const tabbed = props()?.tabbed === true
     const sort = sortOf()
     let list = agents()
@@ -740,7 +740,10 @@ export default class Agents extends View {
       .size_full()
       .min_h(0)
       .bg(t.chrome)
-      .when(!tabbed, (el) => el.border_t(1).border_color(t.border))
+      .when(props()?.panel, (el) => el.rounded(10).overflow_hidden())
+      .when(!tabbed && !props()?.panel, (el) =>
+        el.border_t(1).border_color(t.border),
+      )
       .text_size(13)
       .when(!collapsed && !tabbed, (el) =>
         el.child(

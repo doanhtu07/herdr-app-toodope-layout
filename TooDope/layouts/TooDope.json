@@ -22,37 +22,11 @@
           "window_drag": true
         },
         {
-          "id": "sidebar-lists",
-          "type": "stack",
-          "active": "spaces",
-          "header": {
-            "content": {
-              "mod": "toodope-sidebar-tabs"
-            },
-            "height": 38
-          },
-          "children": [
-            {
-              "id": "spaces",
-              "type": "block",
-              "content": {
-                "mod": "toodope-spaces",
-                "props": {
-                  "tabbed": true
-                }
-              }
-            },
-            {
-              "id": "agents",
-              "type": "block",
-              "content": {
-                "mod": "toodope-agents",
-                "props": {
-                  "tabbed": true
-                }
-              }
-            }
-          ]
+          "id": "spaces",
+          "type": "block",
+          "content": {
+            "mod": "toodope-spaces"
+          }
         },
         {
           "id": "sidebar-footer",
@@ -144,6 +118,16 @@
                       "type": "block",
                       "content": {
                         "mod": "changes"
+                      }
+                    },
+                    {
+                      "id": "agents",
+                      "type": "block",
+                      "content": {
+                        "mod": "toodope-agents",
+                        "props": {
+                          "panel": true
+                        }
                       }
                     }
                   ],

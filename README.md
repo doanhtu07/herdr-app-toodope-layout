@@ -6,10 +6,7 @@ TooDope layout for Herdr App.
 
 ## Features
 
-- **Spaces panel:**
-  - Full-height Spaces and Agents views, switched with centered tabs at the top of the sidebar
-  - A consistent second action row: Spaces navigation/actions or Agents sorting
-  - Agent count badge; the Agents view retains Herdr's status, grouping, pinning, and sub-agent controls
+- **Spaces sidebar:** a full-height Spaces list with navigation and workspace actions.
   - Back/Forward navigation and a recent-spaces picker (clock
     button or Cmd+Shift+J on macOS; Ctrl+Shift+J on Windows/Linux)
   - Active-terminal count for space
@@ -17,7 +14,8 @@ TooDope layout for Herdr App.
   - Copy absolute path button for space
   - Open in VS Code button for space
   - A space info tooltip
-- **Tabs:** an indicator for the tab with the active terminal.
+- **Agents panel:** open Agents from the top bar alongside Files and Changes. The panel retains Herdr's status, grouping, sorting, pinning, and sub-agent controls.
+- **Tabs:** an active-terminal indicator and Files, Changes, and Agents panel controls.
 - **Pane header:** a button that copies the pane's full context.
 - **Bottom bar:** active-space path and VS Code actions, plus machine-wide active-terminal count, branch, and file changes. Click the active-terminal count to see active terminals grouped by space.
 
@@ -33,7 +31,7 @@ Husky runs `lint-staged` before commits and Commitlint checks Conventional Commi
 messages. Prettier formats/checks JavaScript, JSON, Markdown, YAML, SVG, and
 other supported text files with `pnpm format` and `pnpm format:check`.
 Prettier does not format Python; after installing Ruff, run
-`ruff format scripts/install.py`.
+`ruff format scripts/install.py scripts/uninstall.py`.
 
 ## Install or update
 
@@ -53,8 +51,8 @@ To choose a config folder explicitly:
 python3 scripts/install.py --config "/path/to/herdr-app"
 ```
 
-It replaces only `layouts/TooDope.json` and the package's `mods/toodope-*`
-folders. It also adds a recent-spaces shortcut scoped to the TooDope layout in
+It replaces `layouts/TooDope.json` and the package's `mods/toodope-*` folders,
+and removes the retired `toodope-sidebar-tabs` mod. It also adds a recent-spaces shortcut scoped to the TooDope layout in
 `keys.json` if that key is available: Cmd+Shift+J on macOS, Ctrl+Shift+J on
 Windows/Linux. Existing key bindings are preserved; a conflict is reported
 without being overwritten. It does not touch other layouts, mods, settings, or
@@ -63,6 +61,22 @@ Herdr-managed layout click state. After installation, select it with:
 ```sh
 herdr-app do layout.switch --name TooDope
 ```
+
+## Uninstall
+
+Run from the repository root:
+
+```sh
+python3 scripts/uninstall.py
+```
+
+Use `--config "/path/to/herdr-app"` to select a config folder explicitly. The
+uninstaller removes TooDope's layout and packaged mods, plus the retired
+sidebar-tabs mod. It removes only bindings whose actions still point to TooDope
+recent-space or new-space commands; unrelated or subsequently changed bindings,
+other layouts, settings, and Herdr-managed state are preserved.
+If TooDope is currently open, switch to another installed layout in Herdr before
+restarting the app.
 
 The gallery-ready layout package is in `TooDope/` (`layouts/`, `mods/`,
 `RECIPE.md`, and `preview.png`). The preview shows the recent-spaces picker over

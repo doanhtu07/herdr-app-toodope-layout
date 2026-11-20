@@ -1249,7 +1249,13 @@ export default class Spaces extends View {
   render() {
     const t = theme()
     const collapsed = narrow()
+    const compactMac = collapsed && window()?.platform === 'macos'
     const stop = (_e, cx) => cx.stop_propagation()
+    const expandSidebar = () =>
+      run('layout.resize', {
+        id: 'sidebar',
+        px: shared('sidebar.width') ?? 268,
+      })
 
     const navButton = (id, icon, label, enabled, action) =>
       div()
@@ -1361,13 +1367,21 @@ export default class Spaces extends View {
                       ),
                     ]
                   : []),
-                navButton(
-                  'space-history-open',
-                  'mods/workspace-chrome/clock.svg',
-                  'Recent spaces',
-                  this.history.entries.length > 0,
-                  () => this.openHistory(),
-                ),
+                compactMac
+                  ? navButton(
+                      'sidebar-expand',
+                      'mods/workspace-chrome/chevron-right.svg',
+                      'Expand sidebar',
+                      true,
+                      expandSidebar,
+                    )
+                  : navButton(
+                      'space-history-open',
+                      'mods/workspace-chrome/clock.svg',
+                      'Recent spaces',
+                      this.history.entries.length > 0,
+                      () => this.openHistory(),
+                    ),
                 div()
                   .id('space-new')
                   .size(collapsed ? 20 : 22)

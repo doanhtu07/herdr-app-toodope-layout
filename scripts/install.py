@@ -21,6 +21,7 @@ SHORTCUT_CONTEXTS = ("global", "terminal", SHORTCUT_SECTION)
 NEW_SPACE_ACTION = "toodope-workspace-status.new-space"
 NEW_SPACE_KEY = "cmd-n"
 NEW_SPACE_DEFAULT = "space.new"
+RETIRED_MODS = "toodope-sidebar-tabs"
 
 
 def shortcut_for_platform(platform: str | None = None) -> tuple[str, str]:
@@ -274,10 +275,10 @@ def install(config: Path) -> int:
     layouts.mkdir(parents=True, exist_ok=True)
     mods.mkdir(parents=True, exist_ok=True)
 
-    # Replace only layouts and mods shipped by this package.
+    # Replace shipped mods, and retire these package-owned mods from prior versions.
     for name in layout_names:
         remove_path(layouts / name)
-    for name in mod_names:
+    for name in (*mod_names, *RETIRED_MODS):
         remove_path(mods / name)
 
     for name in layout_names:

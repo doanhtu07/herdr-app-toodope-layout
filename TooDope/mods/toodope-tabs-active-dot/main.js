@@ -51,6 +51,32 @@ function lead(panes, tab) {
   )
 }
 
+function agentsIcon(t) {
+  return div()
+    .relative()
+    .flex_none()
+    .w(14)
+    .h(14)
+    .child(div().absolute().left(6).top(0).w(2).h(3).rounded_full().bg(t.ansi5))
+    .child(
+      div()
+        .absolute()
+        .left(2)
+        .top(3)
+        .w(10)
+        .h(10)
+        .rounded(3)
+        .border(1)
+        .border_color(t.ansi5)
+        .bg(t.chrome),
+    )
+    .child(div().absolute().left(4).top(6).w(2).h(2).rounded_full().bg(t.ansi5))
+    .child(div().absolute().left(8).top(6).w(2).h(2).rounded_full().bg(t.ansi5))
+    .child(
+      div().absolute().left(5).top(10).w(4).h(1).rounded_full().bg(t.ansi5),
+    )
+}
+
 function programTile(t, program, status) {
   const statusColor = status && status !== 'idle' ? t[status] : null
 
@@ -432,7 +458,12 @@ export default class Tabs extends View {
     const panel = find(root, 'panel'),
       body = find(root, 'panel-body')
 
-    const enabled = shared('workspace.panels') ?? ['files', 'changes']
+    const enabled = [
+      ...new Set([
+        ...(shared('workspace.panels') ?? ['files', 'changes']),
+        ...(find(root, 'agents') ? ['agents'] : []),
+      ]),
+    ]
 
     this.syncPanel(space, panel, body, enabled)
 
@@ -472,7 +503,7 @@ export default class Tabs extends View {
             run('layout.show', { id: 'panel' })
           }
         })
-        .child(svg(icon).size(14))
+        .child(icon ? svg(icon).size(14) : agentsIcon(t))
         .child(label)
     }
 
@@ -509,7 +540,7 @@ export default class Tabs extends View {
           '+',
           () =>
             openOverlay({
-              mod: 'new-menu',
+              mod: 'toodope-new-menu',
               kind: 'popup',
               width: 250,
               height: 512,
@@ -522,6 +553,9 @@ export default class Tabs extends View {
       )
       .when(enabled.includes('changes'), (el) =>
         el.child(panelButton('changes', 'Changes', 'mods/changes/changes.svg')),
+      )
+      .when(enabled.includes('agents'), (el) =>
+        el.child(panelButton('agents', 'Agents', null)),
       )
       .when(w?.buttons, (el) =>
         el
