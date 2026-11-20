@@ -1,6 +1,6 @@
 # TooDope
 
-A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space navigation and a picker, richer workspace details and actions, an active-terminal tab indicator, pane-context copying, and a more informative status footer. Herdr's built-in Spaces view groups worktrees under their main checkout; TooDope adds activity and Git-change details.
+A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space navigation and a picker, richer workspace details and actions, an active-terminal tab indicator, pane-context and agent-instruction copying, and a more informative status footer. Herdr's built-in Spaces view groups worktrees under their main checkout; TooDope adds activity and Git-change details.
 
 ![TooDope](preview.png)
 
@@ -8,7 +8,7 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 
 - A 268px left rail with a 46px top brand/header block, a 38px strip of content-width Spaces/Agents tabs with vertical padding inside their borders, a 31px contextual action row, one selected list filling the remaining space, and a 69px footer. Tab labels and the inline Agents count badge are centered as a group.
 - A 42px top tab bar with vertically padded workspace tabs and Files/Changes controls, program icons in 22px colored tiles matching the official Terminals layout, status badges, an active-terminal indicator, a new-tab menu, and window controls where the platform draws them.
-- The main workspace uses 8px outer padding and gaps. Each pane has a 30px header with its short terminal ID pinned at the far right; clicking it copies terminal, pane, tab, and space details. Panes have 10px rounded corners, a border/focus treatment, and 14×12px terminal padding. The optional right panel is 368px wide (minimum 280px), starts hidden, and switches between Files and Changes.
+- The main workspace uses 8px outer padding and gaps. Each pane has a 30px header with its short terminal ID pinned at the far right; clicking it copies terminal, pane, tab, and space details. A copy-instructions button sits just left of the ID: it copies a ready-to-paste prompt that gives the pane's agent its hc address, pane context, and preferences for delegating work and running long processes through `hc`. Panes have 10px rounded corners, a border/focus treatment, and 14×12px terminal padding. The optional right panel is 368px wide (minimum 280px), starts hidden, and switches between Files and Changes.
 - A 28px status footer shows the current machine, agent counts, active terminals, branch/change counts when available, active-space copy-path and VS Code actions, and the command-palette shortcut. Click the active-terminal count to open a centered list grouped by space; rows show only the tab name (or tab number when unnamed), not terminal or pane IDs or paths, with visible spacing between entries. Use ↑/↓ and Enter or click a row to jump to its tab and pane, and Esc to close. Keyboard navigation keeps the selected row visible while scrolling.
 
 ## How it behaves
@@ -34,7 +34,7 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 - `toodope-tabs-active-dot`: tab bar, panel controls, tab interactions, and platform window buttons. Uses shared state, layout/window data, overlays, and tab/layout/window commands.
 - `toodope-workspace-status`: machine, agent, active-terminal activity/counts, Git status, and palette-key summary. It keeps terminal activity data fresh even while the sidebar is closed. It also handles the `new-space` command used by Cmd+N (Ctrl+N) and the Spaces header's add button: it runs `space.new` and then `space.move` to place the new space after the selected one, and the installer adds that key to the `layout:TooDope` section of `keys.json`.
 - `toodope-active-terminals`: centered dialog listing active terminals grouped by space, with navigation to the selected terminal.
-- `toodope-pane-header`: the shipped pane header controls and status, plus a visible terminal ID that copies pane context when clicked.
+- `toodope-pane-header`: the shipped pane header controls and status, plus a visible terminal ID that copies pane context when clicked and a copy button that copies hc instructions for the pane's agent.
 - Shipped Herdr mods used by the layout: `agents`, `pane`, `files`, and `changes`; TooDope's workspace chrome uses shipped icons, and the tab bar opens shipped `menu` and `new-menu` overlays.
 - Custom mod assets are included alongside their code under `mods/`.
 
@@ -61,5 +61,6 @@ A TooDope keeps the base Herdr layout and adds a few useful twists: recent-space
 - A quick tab click selects without starting a drag; a deliberate drag shows its drop bar and reorders on release, while leaving the tab bar cancels it.
 - A quick space click selects without starting a drag; a deliberate space drag suppresses row hover styling, shows a horizontal drop line, and reorders within the machine on release.
 - Tab program icons use the official Terminals colored-tile treatment at 22px, with proportionally smaller glyphs and status badges.
+- The pane header's copy-instructions button copies hc instructions containing that pane's terminal ID and context, and copied pane details contain only the details, with no extra instruction line.
 - Sidebar rows, sidebar tabs, workspace tabs, mod controls, and the padded footer count show a clearly contrasting, theme-aware hover state in both light and dark appearances. Active/focused tabs have a distinct filled treatment without an underline.
 - With a space selected, the Spaces header's add button and Cmd+N (Ctrl+N) create the new space directly below the selected space, on the same machine, and show it.
