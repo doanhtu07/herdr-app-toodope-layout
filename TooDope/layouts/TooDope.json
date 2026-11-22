@@ -107,20 +107,6 @@
                   "type": "stack",
                   "children": [
                     {
-                      "id": "files",
-                      "type": "block",
-                      "content": {
-                        "mod": "files"
-                      }
-                    },
-                    {
-                      "id": "changes",
-                      "type": "block",
-                      "content": {
-                        "mod": "changes"
-                      }
-                    },
-                    {
                       "id": "agents",
                       "type": "block",
                       "content": {
@@ -131,7 +117,7 @@
                       }
                     }
                   ],
-                  "active": "files"
+                  "active": "agents"
                 }
               ],
               "size": {

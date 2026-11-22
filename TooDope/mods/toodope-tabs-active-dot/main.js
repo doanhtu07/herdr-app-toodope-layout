@@ -458,12 +458,7 @@ export default class Tabs extends View {
     const panel = find(root, 'panel'),
       body = find(root, 'panel-body')
 
-    const enabled = [
-      ...new Set([
-        ...(shared('workspace.panels') ?? ['files', 'changes']),
-        ...(find(root, 'agents') ? ['agents'] : []),
-      ]),
-    ]
+    const enabled = find(root, 'agents') ? ['agents'] : []
 
     this.syncPanel(space, panel, body, enabled)
 
@@ -547,12 +542,6 @@ export default class Tabs extends View {
             }),
           true,
         ),
-      )
-      .when(enabled.includes('files'), (el) =>
-        el.child(panelButton('files', 'Files', 'mods/files/file.svg')),
-      )
-      .when(enabled.includes('changes'), (el) =>
-        el.child(panelButton('changes', 'Changes', 'mods/changes/changes.svg')),
       )
       .when(enabled.includes('agents'), (el) =>
         el.child(panelButton('agents', 'Agents', null)),
