@@ -36,7 +36,7 @@ function agentInstructions(address, pane, space, tab, cwd) {
     '',
     `You are in ${context}.`,
     '',
-    'Before your first `hc` command this session, load the /hc skill (it has you read `hc --skill`, the manual for this version). Preferences:',
+    'Before your first `hc` command this session, load the `/herdr-core` skill (it has you read `hc --skill`, the manual for this version). Preferences:',
     '',
     '- Delegate work to helper agents in hc terminals (`hc run --bg --name <name> --cwd <dir> claude "<task>"`), not built-in subagents, so the user can watch and steer them. Use a folder the helper already trusts (the repo, or your own cwd) so it does not stall on the trust prompt. Keep built-in subagents for quick lookups.',
     "- Run dev servers, watchers and other long-running processes with `hc run --bg --name <name> --cwd <repo> -- <command>`, never your shell tool's background mode, so the user can see them.",
