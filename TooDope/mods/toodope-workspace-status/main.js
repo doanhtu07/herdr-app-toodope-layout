@@ -17,9 +17,21 @@ import {
   hc,
   home,
   notify,
+  layout,
 } from 'herdr'
 
 const HISTORY_KEY = 'space.navigation'
+
+function find(node, id) {
+  if (node?.id === id) return node
+
+  for (const child of node?.children ?? []) {
+    const found = find(child, id)
+    if (found) return found
+  }
+
+  return null
+}
 
 function place(space, ps) {
   const tabs = new Set((space.tabs ?? []).map((tab) => tab.id))
@@ -278,6 +290,24 @@ export default class WorkspaceStatus extends View {
     })
   }
 
+  // The footer's agent count mirrors the tab bar's Agents control: it opens the
+  // right panel on Agents, and closes it when Agents is already showing.
+  toggleAgents() {
+    const root = layout()
+    if (!find(root, 'agents')) return
+
+    const panel = find(root, 'panel')
+    const body = find(root, 'panel-body')
+
+    if (panel && !panel.hidden && body?.active === 'agents') {
+      run('layout.hide', { id: 'panel' })
+      return
+    }
+
+    run('layout.select', { stack: 'panel-body', child: 'agents' })
+    run('layout.show', { id: 'panel' })
+  }
+
   openActiveTerminals() {
     const active = shared('space.activeTerminals') ?? {}
     const byId = new Map(spaces().map((space) => [space.id, space]))
@@ -442,6 +472,15 @@ export default class WorkspaceStatus extends View {
     )
     const changed = space ? shared('space.changeCounts')?.[space.id] : undefined
 
+    const root = layout()
+    const panel = find(root, 'panel')
+    const agentsOn = Boolean(
+      find(root, 'agents') &&
+      panel &&
+      !panel.hidden &&
+      find(root, 'panel-body')?.active === 'agents',
+    )
+
     const label = (icon, text) =>
       h_flex()
         .gap(6)
@@ -471,8 +510,35 @@ export default class WorkspaceStatus extends View {
           .items_center()
           .child(
             h_flex()
+              .id('status-agents')
+              .h(22)
+              .px(6)
               .gap(6)
               .items_center()
+              .rounded(6)
+              .cursor_pointer()
+              .when(agentsOn, (el) =>
+                el
+                  .bg(t.selected)
+                  .text_color(t.foreground)
+                  .border(1)
+                  .border_color(t.accent),
+              )
+              .when(!agentsOn, (el) =>
+                el.hover((s) =>
+                  s
+                    .bg(t.input)
+                    .border(1)
+                    .border_color(t.accent)
+                    .text_color(t.foreground),
+                ),
+              )
+              .tooltip('Show or hide the Agents panel')
+              .on_mouse_down('left', (_e, cx) => cx.stop_propagation())
+              .on_click((_e, cx) => {
+                cx.stop_propagation()
+                this.toggleAgents()
+              })
               .child(div().size(6).rounded(3).bg(t.dim))
               .child(`${list.length} agents`)
               .when(needs > 0, (el) =>
